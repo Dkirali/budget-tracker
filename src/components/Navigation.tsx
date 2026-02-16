@@ -1,8 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Wallet } from 'lucide-react';
+import { LayoutDashboard, Calendar, Wallet, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/context/useTheme';
 import './Navigation.css';
 
 export const Navigation = () => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <nav className="navigation">
       <div className="nav-brand">
@@ -27,6 +30,14 @@ export const Navigation = () => {
           <Calendar size={20} />
           <span>Calendar</span>
         </NavLink>
+
+        <button 
+          onClick={toggleTheme}
+          className="theme-toggle"
+          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
       </div>
     </nav>
   );
