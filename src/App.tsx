@@ -2,14 +2,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Navigation } from '@/components/Navigation';
 import { Dashboard } from '@/pages/Dashboard';
 import { Calendar } from '@/pages/Calendar';
-import './App.css';
 
 function App() {
   return (
     <Router>
-      <div className="app">
+      <div className="min-h-screen bg-[var(--color-bg-primary)] transition-colors duration-300">
         <Navigation />
-        <main className="main-content">
+        <main className="pt-16 min-h-screen">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/calendar" element={<Calendar />} />
