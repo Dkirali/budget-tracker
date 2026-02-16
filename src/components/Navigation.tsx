@@ -1,10 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Wallet, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Calendar, Wallet, Sun, Moon, DollarSign } from 'lucide-react';
 import { useTheme } from '@/context/useTheme';
+import { useCurrency } from '@/context/useCurrency';
+import { CURRENCIES } from '@/types/currency';
 import './Navigation.css';
 
 export const Navigation = () => {
   const { theme, toggleTheme } = useTheme();
+  const { currency, setCurrency } = useCurrency();
 
   return (
     <nav className="navigation">
@@ -30,6 +33,21 @@ export const Navigation = () => {
           <Calendar size={20} />
           <span>Calendar</span>
         </NavLink>
+
+        <div className="currency-selector">
+          <DollarSign size={16} className="currency-icon" />
+          <select 
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as typeof currency)}
+            className="currency-select"
+          >
+            {Object.values(CURRENCIES).map((curr) => (
+              <option key={curr.code} value={curr.code}>
+                {curr.flag} {curr.code}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <button 
           onClick={toggleTheme}
