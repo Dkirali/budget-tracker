@@ -21,6 +21,7 @@ export interface Transaction {
   notes?: string;
   expenseType?: ExpenseType;
   isRecurring?: boolean;
+  currency: string;
 }
 
 export interface TransactionFormData {
