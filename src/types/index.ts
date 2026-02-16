@@ -21,6 +21,7 @@ export interface Transaction {
   notes?: string;
   expenseType?: ExpenseType;
   isRecurring?: boolean;
+  currency: string;
 }
 
 export interface TransactionFormData {
@@ -70,3 +71,6 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'utilities', label: 'Utilities' },
   { value: 'other', label: 'Other' }
 ];
+
+// Re-export currency types
+export * from './currency';

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, AlertCircle, ShoppingBag, Briefcase } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, getDay } from 'date-fns';
 import { storageService } from '@/services/storage';
-import { generateCalendarDays, calculateDashboardStats, formatCurrency } from '@/utils/calculations';
+import { generateCalendarDays, calculateDashboardStats } from '@/utils/calculations';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { useCurrency } from '@/context/useCurrency';
 import { TransactionForm } from '@/components/TransactionForm';
 import type { Transaction } from '@/types';
 import './Calendar.css';
@@ -11,6 +13,7 @@ export const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const { currency } = useCurrency();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
@@ -60,7 +63,7 @@ export const Calendar = () => {
         <div className="calendar-summary">
           <div className="summary-item">
             <span className="summary-label">Daily Budget</span>
-            <span className="summary-value budget">{formatCurrency(stats.dailyBudget)}</span>
+            <span className="summary-value budget">{formatCurrency(stats.dailyBudget, currency)}</span>
           </div>
           <TransactionForm onTransactionAdded={loadTransactions} />
         </div>
@@ -94,12 +97,12 @@ export const Calendar = () => {
                   {day.stats && day.stats.transactions.length > 0 && (
                     <div className="day-stats">
                       {day.stats.income > 0 && (
-                        <span className="day-income">+{formatCurrency(day.stats.income)}</span>
+                        <span className="day-income">+{formatCurrency(day.stats.income, currency)}</span>
                       )}
                       {day.stats.expense > 0 && (
                         <span className="day-expense">
                           {isOverBudget && <AlertCircle size={10} className="over-budget-icon" />}
-                          -{formatCurrency(day.stats.expense)}
+                          -{formatCurrency(day.stats.expense, currency)}
                         </span>
                       )}
                     </div>
@@ -136,23 +139,23 @@ export const Calendar = () => {
               <div className="day-summary-bar">
                 <div className="summary-stat">
                   <span className="label">Income</span>
-                  <span className="value income">+{formatCurrency(selectedDayStats.income)}</span>
+                  <span className="value income">+{formatCurrency(selectedDayStats.income, currency)}</span>
                 </div>
                 <div className="summary-stat">
                   <span className="label">Expense</span>
-                  <span className="value expense">-{formatCurrency(selectedDayStats.expense)}</span>
+                  <span className="value expense">-{formatCurrency(selectedDayStats.expense, currency)}</span>
                 </div>
                 <div className="summary-stat">
                   <span className="label">Net</span>
                   <span className={`value ${selectedDayStats.income - selectedDayStats.expense >= 0 ? 'income' : 'expense'}`}>
                     {selectedDayStats.income - selectedDayStats.expense >= 0 ? '+' : ''}
-                    {formatCurrency(selectedDayStats.income - selectedDayStats.expense)}
+                    {formatCurrency(selectedDayStats.income - selectedDayStats.expense, currency)}
                   </span>
                 </div>
                 {selectedDayStats.expense > stats.dailyBudget && (
                   <div className="budget-alert">
                     <AlertCircle size={14} />
-                    Exceeded budget by {formatCurrency(selectedDayStats.expense - stats.dailyBudget)}
+                    Exceeded budget by {formatCurrency(selectedDayStats.expense - stats.dailyBudget, currency)}
                   </div>
                 )}
               </div>
@@ -184,7 +187,7 @@ export const Calendar = () => {
                     </div>
                     <span className={`transaction-amount ${transaction.type}`}>
                       {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(transaction.amount, currency)}
                     </span>
                   </div>
                 ))}

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
+import { ExchangeRateTicker } from '@/components/ExchangeRateTicker';
 import { Dashboard } from '@/pages/Dashboard';
 import { Calendar } from '@/pages/Calendar';
 
@@ -8,7 +9,8 @@ function App() {
     <Router>
       <div className="min-h-screen bg-[var(--color-bg-primary)] transition-colors duration-300">
         <Navigation />
-        <main className="pt-16 min-h-screen">
+        <ExchangeRateTicker />
+        <main className="pt-24 min-h-screen">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/calendar" element={<Calendar />} />

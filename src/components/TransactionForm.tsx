@@ -7,8 +7,10 @@ import type {
   ExpenseCategory 
 } from '@/types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
+import { CURRENCIES } from '@/types/currency';
 import { storageService } from '@/services/storage';
 import { generateId } from '@/utils/calculations';
+import { useCurrency } from '@/context/useCurrency';
 import './TransactionForm.css';
 
 interface TransactionFormProps {
@@ -28,6 +30,7 @@ const initialFormData: TransactionFormData = {
 export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) => {
   const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
   const [showForm, setShowForm] = useState(false);
+  const { currency, setCurrency } = useCurrency();
 
   const handleTypeChange = (type: TransactionType) => {
     setFormData(prev => ({
@@ -35,6 +38,31 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
       type,
       category: (type === 'income' ? 'salary' : 'food') as IncomeCategory | ExpenseCategory
     }));
+  };
+
+  const formatAmount = (value: string) => {
+    // Remove all non-numeric characters except decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    
+    // Handle multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      return parts[0] + '.' + parts.slice(1).join('');
+    }
+    
+    return numericValue;
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatAmount(e.target.value);
+    setFormData(prev => ({ ...prev, amount: formatted }));
+  };
+
+  const displayAmount = (value: string) => {
+    if (!value) return '';
+    const num = parseFloat(value);
+    if (isNaN(num)) return value;
+    return num.toLocaleString('en-US');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,6 +78,7 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
       amount,
       date: formData.date,
       notes: formData.notes.trim() || undefined,
+      currency: currency,
       ...(formData.type === 'expense' && {
         expenseType: formData.expenseType,
         isRecurring: formData.isRecurring
@@ -159,16 +188,18 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="amount">Amount</label>
-              <input
-                type="number"
-                id="amount"
-                value={formData.amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                placeholder="0.00"
-                step="0.01"
-                min="0.01"
-                required
-              />
+              <div className="amount-input-wrapper">
+                <input
+                  type="text"
+                  id="amount"
+                  value={displayAmount(formData.amount)}
+                  onChange={handleAmountChange}
+                  placeholder="0.00"
+                  className="amount-input"
+                  required
+                />
+                <span className="amount-currency">{CURRENCIES[currency].symbol}</span>
+              </div>
             </div>
 
             <div className="form-group">
@@ -180,6 +211,22 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
                 onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                 required
               />
+            </div>
+
+            <div className="form-group currency-group">
+              <label htmlFor="currency">Currency</label>
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as typeof currency)}
+                className="currency-select"
+              >
+                {Object.values(CURRENCIES).map((curr) => (
+                  <option key={curr.code} value={curr.code}>
+                    {curr.flag} {curr.code}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
