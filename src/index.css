@@ -4,8 +4,8 @@
 
 @theme {
   /* Light Mode Colors */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8fafc;
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #ffffff;
   --color-bg-tertiary: #f1f5f9;
   --color-bg-card: #ffffff;
   --color-bg-hover: #f8fafc;
@@ -17,6 +17,12 @@
   
   --color-border: #e2e8f0;
   --color-border-subtle: #f1f5f9;
+  
+  /* Gradient Colors */
+  --color-gradient-start: #3b82f6;
+  --color-gradient-end: #8b5cf6;
+  --color-gradient-green: #10b981;
+  --color-gradient-red: #ef4444;
   
   /* Accent Colors */
   --color-accent-blue: #3b82f6;
@@ -41,30 +47,34 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-card: 0 4px 20px -2px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 8px 30px -4px rgb(0 0 0 / 0.12), 0 4px 12px -4px rgb(0 0 0 / 0.08);
 }
 
 .dark {
-  /* Dark Mode Colors */
+  /* Dark Mode Colors - More vivid for better visibility */
   --color-bg-primary: #0f172a;
   --color-bg-secondary: #1e293b;
   --color-bg-tertiary: #334155;
   --color-bg-card: #1e293b;
-  --color-bg-hover: #334155;
+  --color-bg-hover: #475569;
   
-  --color-text-primary: #f8fafc;
+  --color-text-primary: #f1f5f9;
   --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #64748b;
-  --color-text-muted: #94a3b8;
+  --color-text-tertiary: #94a3b8;
+  --color-text-muted: #64748b;
   
-  --color-border: #334155;
-  --color-border-subtle: #1e293b;
+  --color-border: #475569;
+  --color-border-subtle: #334155;
   
-  /* Shadows for dark mode */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  /* Shadows for dark mode - brighter for visibility */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.6);
+  --shadow-card: 0 4px 24px -4px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 8px 32px -4px rgb(0 0 0 / 0.5);
 }
 
 /* Base Styles */
@@ -83,6 +93,29 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Background Pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.dark body::before {
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
 }
 
 /* Scrollbar Styling */
@@ -116,7 +149,41 @@ body {
   outline-offset: 2px;
 }
 
-/* Smooth transitions for theme changes */
+/* Smooth transitions */
 * {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Utility Classes */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-gradient-start), var(--color-gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--color-gradient-start), var(--color-gradient-end));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }

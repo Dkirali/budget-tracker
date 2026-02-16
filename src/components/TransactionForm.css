@@ -2,92 +2,119 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%);
   color: white;
   border: none;
   border-radius: 0.75rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px -3px rgba(59, 130, 246, 0.4);
+  letter-spacing: -0.01em;
 }
 
 .add-transaction-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.5);
+}
+
+.add-transaction-btn:active {
+  transform: translateY(-1px);
 }
 
 .transaction-form-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   z-index: 100;
-  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .transaction-form-container {
-  background: white;
-  border-radius: 1rem;
+  background: var(--color-bg-card);
+  border-radius: 1.25rem;
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--color-border);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .transaction-form-container h2 {
-  padding: 1.5rem 1.5rem 0;
+  padding: 1.75rem 1.75rem 0;
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
-  color: #111827;
+  background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .transaction-form {
-  padding: 1.5rem;
+  padding: 1.5rem 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.375rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.5rem;
 }
 
 .form-group label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 0.625rem 0.875rem;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  color: #111827;
-  background: white;
-  transition: border-color 0.2s ease;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0.625rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  transition: all 0.2s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .form-row {
@@ -107,15 +134,16 @@
   padding-right: 2.5rem;
   font-family: 'Courier New', monospace;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.0625rem;
 }
 
 .amount-currency {
   position: absolute;
-  right: 0.75rem;
+  right: 0.875rem;
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 600;
   pointer-events: none;
+  font-size: 0.9375rem;
 }
 
 .currency-group select {
@@ -123,35 +151,37 @@
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.5rem center;
+  background-position: right 0.75rem center;
 }
 
 .type-selector .type-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
 .type-btn {
-  padding: 0.625rem 1rem;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: white;
-  color: #6b7280;
-  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .type-btn:hover {
-  border-color: #d1d5db;
+  border-color: var(--color-accent-blue);
+  color: var(--color-text-primary);
 }
 
 .type-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%);
+  border-color: transparent;
   color: white;
+  box-shadow: 0 4px 14px -3px rgba(59, 130, 246, 0.4);
 }
 
 .checkbox-group {
@@ -162,58 +192,69 @@
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.checkbox-label:hover {
+  color: var(--color-text-primary);
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 1.125rem;
-  height: 1.125rem;
-  accent-color: #3b82f6;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-accent-blue);
 }
 
 .form-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  padding-top: 0.5rem;
+  gap: 0.875rem;
+  padding-top: 0.75rem;
 }
 
 .cancel-btn {
-  padding: 0.75rem 1rem;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: white;
-  color: #6b7280;
-  font-size: 0.875rem;
+  padding: 0.875rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0.625rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .cancel-btn:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: var(--color-text-muted);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 
 .submit-btn {
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
   border: none;
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, var(--color-accent-green) 0%, var(--color-accent-green-dark) 100%);
   color: white;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px -3px rgba(16, 185, 129, 0.4);
 }
 
 .submit-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.5);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 640px) {
@@ -230,7 +271,16 @@
   
   .transaction-form-container {
     max-height: 85vh;
-    border-radius: 1rem 1rem 0 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+  
+  .transaction-form {
+    padding: 1.25rem;
+  }
+  
+  .transaction-form-container h2 {
+    padding: 1.5rem 1.25rem 0;
+    font-size: 1.25rem;
   }
   
   .form-row {
@@ -240,8 +290,9 @@
   .form-actions {
     position: sticky;
     bottom: 0;
-    background: white;
+    background: var(--color-bg-card);
     padding: 1rem 0 0;
     margin: 0;
+    border-top: 1px solid var(--color-border-subtle);
   }
 }

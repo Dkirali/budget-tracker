@@ -8,8 +8,8 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -68,9 +68,8 @@ export const Dashboard = () => {
       totalIncome: convertedIncome,
       totalExpense: convertedExpense,
       moneySaved: convertedIncome - convertedExpense,
-      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30) // Simplified daily budget
+      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30)
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, currency, rates]);
 
   const chartData = useMemo(() => {
@@ -185,46 +184,73 @@ export const Dashboard = () => {
             <p>Daily breakdown for {format(currentDate, 'MMMM yyyy')}</p>
           </div>
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3}/>
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="var(--color-border-subtle)" 
+                  vertical={false}
+                />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
                   tickMargin={10}
+                  axisLine={{ stroke: 'var(--color-border)' }}
+                  tickLine={false}
                 />
                 <YAxis 
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => `$${value}`}
+                  tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+                  tickFormatter={(value) => value.toLocaleString()}
+                  axisLine={false}
+                  tickLine={false}
+                  width={60}
                 />
                 <Tooltip
-                  formatter={(value: number) => formatCurrency(value, currency)}
+                  formatter={(value: number) => [formatCurrency(value, currency), '']}
                   contentStyle={{
                     background: 'var(--color-bg-card)',
                     border: '1px solid var(--color-border)',
-                    borderRadius: '0.5rem',
+                    borderRadius: '0.75rem',
                     boxShadow: 'var(--shadow-lg)',
                     color: 'var(--color-text-primary)'
                   }}
+                  labelStyle={{ color: 'var(--color-text-secondary)' }}
                 />
-                <Legend />
-                <Line 
+                <Legend 
+                  wrapperStyle={{ paddingTop: '1rem' }}
+                  formatter={(value) => <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>}
+                />
+                <Area 
                   type="monotone" 
                   dataKey="income" 
                   stroke="#10b981" 
-                  strokeWidth={2}
-                  dot={{ fill: '#10b981', strokeWidth: 0, r: 3 }}
+                  strokeWidth={3}
+                  fill="url(#incomeGradient)"
                   name="Income"
+                  animationDuration={1500}
+                  animationEasing="ease-out"
                 />
-                <Line 
+                <Area 
                   type="monotone" 
                   dataKey="expense" 
                   stroke="#ef4444" 
-                  strokeWidth={2}
-                  dot={{ fill: '#ef4444', strokeWidth: 0, r: 3 }}
+                  strokeWidth={3}
+                  fill="url(#expenseGradient)"
                   name="Expense"
+                  animationDuration={1500}
+                  animationEasing="ease-out"
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
