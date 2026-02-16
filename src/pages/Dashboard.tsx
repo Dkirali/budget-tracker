@@ -20,16 +20,19 @@ import {
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
 import { storageService } from '@/services/storage';
-import { calculateDashboardStats, calculateDailyStats } from '@/utils/calculations';
+import { calculateDailyStats } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
-import type { Transaction } from '@/types';
+import { useExchangeRates } from '@/context/useExchangeRates';
+import { convertAmount, calculateTotalInCurrency } from '@/utils/conversions';
+import type { Transaction, CurrencyCode } from '@/types';
 import './Dashboard.css';
 
 export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentDate] = useState(new Date());
   const { currency } = useCurrency();
+  const { rates } = useExchangeRates();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
@@ -40,10 +43,35 @@ export const Dashboard = () => {
     loadTransactions();
   }, []);
 
-  const stats = useMemo(() => 
-    calculateDashboardStats(transactions, currentDate),
-    [transactions, currentDate]
-  );
+  // Calculate stats with currency conversion
+  const stats = useMemo(() => {
+    // Convert all amounts to selected currency
+    const convertedIncome = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    const convertedExpense = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'expense').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    const convertedMandatory = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'expense' && t.expenseType === 'mandatory').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    return {
+      totalIncome: convertedIncome,
+      totalExpense: convertedExpense,
+      moneySaved: convertedIncome - convertedExpense,
+      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30) // Simplified daily budget
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, currency, rates]);
 
   const chartData = useMemo(() => {
     const start = startOfMonth(currentDate);
@@ -52,15 +80,28 @@ export const Dashboard = () => {
     
     return days.map(day => {
       const dailyStats = calculateDailyStats(transactions, day);
+      // Convert daily stats to selected currency
+      const dayTransactions = dailyStats.transactions;
+      const convertedIncome = calculateTotalInCurrency(
+        dayTransactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+        currency,
+        rates
+      );
+      const convertedExpense = calculateTotalInCurrency(
+        dayTransactions.filter(t => t.type === 'expense').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+        currency,
+        rates
+      );
+      
       return {
         date: format(day, 'MMM dd'),
         fullDate: format(day, 'yyyy-MM-dd'),
-        income: dailyStats.income,
-        expense: dailyStats.expense,
-        balance: dailyStats.income - dailyStats.expense
+        income: convertedIncome,
+        expense: convertedExpense,
+        balance: convertedIncome - convertedExpense
       };
     });
-  }, [transactions, currentDate]);
+  }, [transactions, currentDate, currency, rates]);
 
   const recentTransactions = useMemo(() => {
     return [...transactions]
@@ -200,7 +241,16 @@ export const Dashboard = () => {
                 <span>Add your first transaction to get started</span>
               </div>
             ) : (
-              recentTransactions.map(transaction => (
+                recentTransactions.map(transaction => {
+                const transactionCurrency = (transaction.currency || 'USD') as CurrencyCode;
+                const convertedAmount = convertAmount(
+                  transaction.amount, 
+                  transactionCurrency, 
+                  currency, 
+                  rates
+                );
+                
+                return (
                 <div 
                   key={transaction.id} 
                   className={`transaction-item ${transaction.type}`}
@@ -217,9 +267,9 @@ export const Dashboard = () => {
                     </span>
                   </div>
                   <div className="transaction-amount">
-                    <span className={transaction.type}>
+                    <span className={transaction.type} title={`Original: ${formatCurrency(transaction.amount, transactionCurrency)}`}>
                       {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount, currency)}
+                      {formatCurrency(convertedAmount, currency)}
                     </span>
                     {transaction.expenseType && (
                       <span className={`expense-type ${transaction.expenseType}`}>
@@ -228,7 +278,7 @@ export const Dashboard = () => {
                     )}
                   </div>
                 </div>
-              ))
+              )})
             )}
           </div>
         </div>
