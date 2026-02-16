@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, AlertCircle, ShoppingBag, Briefcase } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, getDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, getDay, isToday } from 'date-fns';
 import { storageService } from '@/services/storage';
-import { generateCalendarDays, calculateDashboardStats } from '@/utils/calculations';
+import { generateCalendarDays } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
+import { useExchangeRates } from '@/context/useExchangeRates';
+import { convertAmount, calculateTotalInCurrency } from '@/utils/conversions';
 import { TransactionForm } from '@/components/TransactionForm';
-import type { Transaction } from '@/types';
+import type { Transaction, CurrencyCode } from '@/types';
 import './Calendar.css';
 
 export const Calendar = () => {
@@ -14,6 +16,7 @@ export const Calendar = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const { currency } = useCurrency();
+  const { rates } = useExchangeRates();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
@@ -24,7 +27,36 @@ export const Calendar = () => {
     loadTransactions();
   }, []);
 
-  const stats = calculateDashboardStats(transactions, currentDate);
+  // Calculate stats with currency conversion
+  const stats = useMemo(() => {
+    const convertedIncome = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    const convertedExpense = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'expense').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    const convertedMandatory = calculateTotalInCurrency(
+      transactions.filter(t => t.type === 'expense' && t.expenseType === 'mandatory').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+      currency,
+      rates
+    );
+    
+    const daysInMonth = currentDate.getDate();
+    
+    return {
+      totalIncome: convertedIncome,
+      totalExpense: convertedExpense,
+      moneySaved: convertedIncome - convertedExpense,
+      dailyBudget: Math.max(0, daysInMonth > 0 ? (convertedIncome - convertedMandatory) / (new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()) : 0)
+    };
+  }, [transactions, currency, rates, currentDate]);
+
   const calendarDays = generateCalendarDays(
     currentDate.getFullYear(),
     currentDate.getMonth(),
@@ -42,6 +74,13 @@ export const Calendar = () => {
   const selectedDayStats = selectedDay 
     ? calendarDays.find(d => d.date.toDateString() === selectedDay.toDateString())?.stats
     : null;
+
+  // Calculate spending intensity for each day (0-100%)
+  const getSpendingLevel = (expense: number, budget: number): number => {
+    if (expense === 0 || budget === 0) return 0;
+    const level = (expense / budget) * 100;
+    return Math.min(level, 100);
+  };
 
   return (
     <div className="calendar-page">
@@ -83,13 +122,23 @@ export const Calendar = () => {
             ))}
             
             {calendarDays.map((day) => {
-              const isOverBudget = day.stats && day.stats.expense > stats.dailyBudget;
+              const dayStats = day.stats;
+              const expenseAmount = dayStats ? convertAmount(
+                dayStats.expense,
+                'USD',
+                currency,
+                rates
+              ) : 0;
+              const spendingLevel = getSpendingLevel(expenseAmount, stats.dailyBudget);
+              const isOverBudget = expenseAmount > stats.dailyBudget;
               const isSelected = selectedDay?.toDateString() === day.date.toDateString();
+              const isTodayDate = isToday(day.date);
               
               return (
                 <div
                   key={day.date.toISOString()}
-                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isOverBudget ? 'over-budget' : ''}`}
+                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isOverBudget ? 'over-budget' : ''} ${isTodayDate ? 'today' : ''} ${expenseAmount > 0 ? 'has-spending' : ''}`}
+                  style={{ '--spending-level': `${spendingLevel}%` } as React.CSSProperties}
                   onClick={() => setSelectedDay(day.date)}
                 >
                   <span className="day-number">{format(day.date, 'd')}</span>
