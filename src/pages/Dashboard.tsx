@@ -68,9 +68,8 @@ export const Dashboard = () => {
       totalIncome: convertedIncome,
       totalExpense: convertedExpense,
       moneySaved: convertedIncome - convertedExpense,
-      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30) // Simplified daily budget
+      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30)
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, currency, rates]);
 
   const chartData = useMemo(() => {
