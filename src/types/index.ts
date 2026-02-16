@@ -70,3 +70,6 @@ export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
   { value: 'utilities', label: 'Utilities' },
   { value: 'other', label: 'Other' }
 ];
+
+// Re-export currency types
+export * from './currency';

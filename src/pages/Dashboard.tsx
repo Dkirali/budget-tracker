@@ -20,13 +20,16 @@ import {
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
 import { storageService } from '@/services/storage';
-import { calculateDashboardStats, calculateDailyStats, formatCurrency } from '@/utils/calculations';
+import { calculateDashboardStats, calculateDailyStats } from '@/utils/calculations';
+import { formatCurrency } from '@/utils/formatCurrency';
+import { useCurrency } from '@/context/useCurrency';
 import type { Transaction } from '@/types';
 import './Dashboard.css';
 
 export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentDate] = useState(new Date());
+  const { currency } = useCurrency();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
@@ -85,7 +88,7 @@ export const Dashboard = () => {
           </div>
           <div className="stat-content">
             <span className="stat-label">Total Income</span>
-            <span className="stat-value">{formatCurrency(stats.totalIncome)}</span>
+            <span className="stat-value">{formatCurrency(stats.totalIncome, currency)}</span>
             <span className="stat-trend positive">
               <ArrowUpRight size={14} />
               This month
@@ -99,7 +102,7 @@ export const Dashboard = () => {
           </div>
           <div className="stat-content">
             <span className="stat-label">Total Expense</span>
-            <span className="stat-value">{formatCurrency(stats.totalExpense)}</span>
+            <span className="stat-value">{formatCurrency(stats.totalExpense, currency)}</span>
             <span className="stat-trend negative">
               <ArrowDownRight size={14} />
               This month
@@ -113,7 +116,7 @@ export const Dashboard = () => {
           </div>
           <div className="stat-content">
             <span className="stat-label">Money Saved</span>
-            <span className="stat-value">{formatCurrency(stats.moneySaved)}</span>
+            <span className="stat-value">{formatCurrency(stats.moneySaved, currency)}</span>
             <span className="stat-trend neutral">
               Income - Expense
             </span>
@@ -126,7 +129,7 @@ export const Dashboard = () => {
           </div>
           <div className="stat-content">
             <span className="stat-label">Daily Budget</span>
-            <span className="stat-value">{formatCurrency(stats.dailyBudget)}</span>
+            <span className="stat-value">{formatCurrency(stats.dailyBudget, currency)}</span>
             <span className="stat-trend info">
               Per day available
             </span>
@@ -153,13 +156,14 @@ export const Dashboard = () => {
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value) => `$${value}`}
                 />
-                <Tooltip 
-                  formatter={(value: number) => formatCurrency(value)}
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value, currency)}
                   contentStyle={{
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
+                    background: 'var(--color-bg-card)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '0.5rem',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    boxShadow: 'var(--shadow-lg)',
+                    color: 'var(--color-text-primary)'
                   }}
                 />
                 <Legend />
@@ -215,7 +219,7 @@ export const Dashboard = () => {
                   <div className="transaction-amount">
                     <span className={transaction.type}>
                       {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(transaction.amount, currency)}
                     </span>
                     {transaction.expenseType && (
                       <span className={`expense-type ${transaction.expenseType}`}>
