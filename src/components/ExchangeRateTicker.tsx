@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, AlertCircle } from 'lucide-react';
 import { useExchangeRates } from '@/context/useExchangeRates';
-import { useCurrency } from '@/context/useCurrency';
-import { CURRENCIES, type CurrencyCode } from '@/types/currency';
+import { type CurrencyCode } from '@/types/currency';
 import './ExchangeRateTicker.css';
 
 export const ExchangeRateTicker = () => {
   const { rates, isLoading, error, timeSinceUpdate } = useExchangeRates();
-  const { currency: selectedCurrency } = useCurrency();
 
   const formatTimeSince = (seconds: number | null): string => {
     if (seconds === null) return 'Never';
@@ -26,27 +24,28 @@ export const ExchangeRateTicker = () => {
 
     const currencies: CurrencyCode[] = ['USD', 'CAD', 'EUR', 'TRY'];
     
-    // Generate pairs from selected currency to others
-    currencies.forEach((targetCurrency) => {
-      if (targetCurrency !== selectedCurrency && rates[targetCurrency]) {
-        // Calculate rate from selected to target
-        // If rates are USD-based: rate = rates[target] / rates[selected]
-        const rate = rates[targetCurrency] / rates[selectedCurrency];
-        
-        // Mock change direction (in real app, compare with previous rate)
-        const change = Math.random() > 0.5 ? 'up' : 'down';
-        
-        pairs.push({
-          from: selectedCurrency,
-          to: targetCurrency,
-          rate,
-          change
-        });
-      }
+    // Generate all currency pairs
+    currencies.forEach((fromCurrency) => {
+      currencies.forEach((toCurrency) => {
+        if (fromCurrency !== toCurrency && rates[fromCurrency] && rates[toCurrency]) {
+          const rate = rates[toCurrency] / rates[fromCurrency];
+          const change = Math.random() > 0.5 ? 'up' : 'down';
+          
+          pairs.push({
+            from: fromCurrency,
+            to: toCurrency,
+            rate,
+            change
+          });
+        }
+      });
     });
 
     return pairs;
-  }, [rates, selectedCurrency]);
+  }, [rates]);
+
+  // Duplicate pairs for seamless scrolling
+  const duplicatedPairs = [...exchangeRatePairs, ...exchangeRatePairs];
 
   if (error) {
     return (
@@ -65,24 +64,26 @@ export const ExchangeRateTicker = () => {
           {isLoading && <RefreshCw size={14} className="spin" />}
         </div>
         
-        <div className="ticker-rates">
-          {exchangeRatePairs.map(({ from, to, rate, change }) => (
-            <div key={`${from}-${to}`} className="ticker-item">
-              <span className="ticker-currency-pair">
-                {CURRENCIES[from].flag} → {CURRENCIES[to].flag}
-              </span>
-              <span className="ticker-rate">
-                {rate.toFixed(4)}
-              </span>
-              <span className={`ticker-change ${change}`}>
-                {change === 'up' ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )}
-              </span>
-            </div>
-          ))}
+        <div className="ticker-wrapper">
+          <div className="ticker-rates">
+            {duplicatedPairs.map(({ from, to, rate, change }, index) => (
+              <div key={`${from}-${to}-${index}`} className="ticker-item">
+                <span className="ticker-currency-pair">
+                  {from} → {to}
+                </span>
+                <span className="ticker-rate">
+                  {rate.toFixed(4)}
+                </span>
+                <span className={`ticker-change ${change}`}>
+                  {change === 'up' ? (
+                    <TrendingUp size={12} />
+                  ) : (
+                    <TrendingDown size={12} />
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="ticker-meta">

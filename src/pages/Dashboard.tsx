@@ -5,22 +5,21 @@ import {
   PiggyBank, 
   Calendar,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+  PieChart, 
+  Pie, 
+  Cell, 
   Tooltip, 
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
 import { storageService } from '@/services/storage';
-import { calculateDailyStats } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
 import { useExchangeRates } from '@/context/useExchangeRates';
@@ -31,12 +30,24 @@ import './Dashboard.css';
 export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentDate] = useState(new Date());
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
     setTransactions(data);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    if (confirm('Are you sure you want to delete this transaction?')) {
+      storageService.deleteTransaction(id);
+      loadTransactions();
+    }
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
   };
 
   useEffect(() => {
@@ -72,35 +83,27 @@ export const Dashboard = () => {
     };
   }, [transactions, currency, rates]);
 
-  const chartData = useMemo(() => {
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    const days = eachDayOfInterval({ start, end });
+  // Calculate spending breakdown by category for pie chart
+  const spendingByCategory = useMemo(() => {
+    const expenses = transactions.filter(t => t.type === 'expense');
+    const categoryTotals: Record<string, number> = {};
     
-    return days.map(day => {
-      const dailyStats = calculateDailyStats(transactions, day);
-      // Convert daily stats to selected currency
-      const dayTransactions = dailyStats.transactions;
-      const convertedIncome = calculateTotalInCurrency(
-        dayTransactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
+    expenses.forEach(t => {
+      const convertedAmount = convertAmount(
+        t.amount,
+        (t.currency || 'USD') as CurrencyCode,
         currency,
         rates
       );
-      const convertedExpense = calculateTotalInCurrency(
-        dayTransactions.filter(t => t.type === 'expense').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
-        currency,
-        rates
-      );
-      
-      return {
-        date: format(day, 'MMM dd'),
-        fullDate: format(day, 'yyyy-MM-dd'),
-        income: convertedIncome,
-        expense: convertedExpense,
-        balance: convertedIncome - convertedExpense
-      };
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + convertedAmount;
     });
-  }, [transactions, currentDate, currency, rates]);
+    
+    return Object.entries(categoryTotals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [transactions, currency, rates]);
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#10b981', '#64748b'];
 
   const recentTransactions = useMemo(() => {
     return [...transactions]
@@ -118,7 +121,15 @@ export const Dashboard = () => {
             {format(currentDate, 'MMMM yyyy')}
           </p>
         </div>
-        <TransactionForm onTransactionAdded={loadTransactions} />
+        {editingTransaction ? (
+          <TransactionForm 
+            onTransactionAdded={loadTransactions}
+            editingTransaction={editingTransaction}
+            onCancelEdit={() => setEditingTransaction(null)}
+          />
+        ) : (
+          <TransactionForm onTransactionAdded={loadTransactions} />
+        )}
       </header>
 
       <div className="stats-grid">
@@ -180,78 +191,51 @@ export const Dashboard = () => {
       <div className="dashboard-content">
         <div className="chart-section">
           <div className="section-header">
-            <h2>Income vs Expense</h2>
-            <p>Daily breakdown for {format(currentDate, 'MMMM yyyy')}</p>
+            <h2>Spending by Category</h2>
+            <p>Breakdown of your expenses</p>
           </div>
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3}/>
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="var(--color-border-subtle)" 
-                  vertical={false}
-                />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
-                  tickMargin={10}
-                  axisLine={{ stroke: 'var(--color-border)' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
-                  tickFormatter={(value) => value.toLocaleString()}
-                  axisLine={false}
-                  tickLine={false}
-                  width={60}
-                />
-                <Tooltip
-                  formatter={(value: number) => [formatCurrency(value, currency), '']}
-                  contentStyle={{
-                    background: 'var(--color-bg-card)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '0.75rem',
-                    boxShadow: 'var(--shadow-lg)',
-                    color: 'var(--color-text-primary)'
-                  }}
-                  labelStyle={{ color: 'var(--color-text-secondary)' }}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '1rem' }}
-                  formatter={(value) => <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="income" 
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  fill="url(#incomeGradient)"
-                  name="Income"
-                  animationDuration={1500}
-                  animationEasing="ease-out"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="expense" 
-                  stroke="#ef4444" 
-                  strokeWidth={3}
-                  fill="url(#expenseGradient)"
-                  name="Expense"
-                  animationDuration={1500}
-                  animationEasing="ease-out"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {spendingByCategory.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={spendingByCategory}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    animationDuration={1000}
+                  >
+                    {spendingByCategory.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value, currency)}
+                    contentStyle={{
+                      background: 'var(--color-bg-card)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.75rem',
+                      boxShadow: 'var(--shadow-lg)',
+                      color: 'var(--color-text-primary)'
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    formatter={(value) => <span style={{ color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty-state">
+                <p>No expenses yet</p>
+                <span>Add expenses to see the breakdown</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -293,15 +277,36 @@ export const Dashboard = () => {
                     </span>
                   </div>
                   <div className="transaction-amount">
-                    <span className={transaction.type} title={`Original: ${formatCurrency(transaction.amount, transactionCurrency)}`}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(convertedAmount, currency)}
-                    </span>
-                    {transaction.expenseType && (
-                      <span className={`expense-type ${transaction.expenseType}`}>
-                        {transaction.expenseType}
+                    <div className="amount-details">
+                      <span className={transaction.type}>
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {formatCurrency(convertedAmount, currency)}
                       </span>
-                    )}
+                      <span className="original-amount">
+                        {formatCurrency(transaction.amount, transactionCurrency)}
+                      </span>
+                    </div>
+                    <div className="transaction-actions">
+                      {transaction.expenseType && (
+                        <span className={`expense-type ${transaction.expenseType}`}>
+                          {transaction.expenseType}
+                        </span>
+                      )}
+                      <button 
+                        className="action-btn edit"
+                        onClick={() => handleEditTransaction(transaction)}
+                        title="Edit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button 
+                        className="action-btn delete"
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )})

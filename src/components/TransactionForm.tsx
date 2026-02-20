@@ -1,20 +1,26 @@
-import { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { PlusCircle, ArrowRightLeft } from 'lucide-react';
 import type { 
   TransactionType, 
   TransactionFormData, 
   IncomeCategory,
-  ExpenseCategory 
+  ExpenseCategory,
+  Transaction
 } from '@/types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
-import { CURRENCIES } from '@/types/currency';
+import { CURRENCIES, type CurrencyCode } from '@/types/currency';
 import { storageService } from '@/services/storage';
 import { generateId } from '@/utils/calculations';
 import { useCurrency } from '@/context/useCurrency';
+import { useExchangeRates } from '@/context/useExchangeRates';
+import { convertAmount } from '@/utils/conversions';
+import { formatCurrency } from '@/utils/formatCurrency';
 import './TransactionForm.css';
 
 interface TransactionFormProps {
   onTransactionAdded: () => void;
+  editingTransaction?: Transaction | null;
+  onCancelEdit?: () => void;
 }
 
 const initialFormData: TransactionFormData = {
@@ -27,10 +33,32 @@ const initialFormData: TransactionFormData = {
   isRecurring: false
 };
 
-export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) => {
-  const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
-  const [showForm, setShowForm] = useState(false);
-  const { currency, setCurrency } = useCurrency();
+export const TransactionForm = ({ 
+  onTransactionAdded, 
+  editingTransaction,
+  onCancelEdit 
+}: TransactionFormProps) => {
+  const [formData, setFormData] = useState<TransactionFormData>(
+    editingTransaction 
+      ? {
+          type: editingTransaction.type,
+          category: editingTransaction.category,
+          amount: editingTransaction.amount.toString(),
+          date: editingTransaction.date,
+          notes: editingTransaction.notes || '',
+          expenseType: editingTransaction.expenseType || 'leisure',
+          isRecurring: editingTransaction.isRecurring || false
+        }
+      : initialFormData
+  );
+  const [showForm, setShowForm] = useState(!!editingTransaction);
+  // Local currency state for this transaction only
+  const [transactionCurrency, setTransactionCurrency] = useState<CurrencyCode>(
+    (editingTransaction?.currency as CurrencyCode) || 'USD'
+  );
+  
+  const { currency: globalCurrency } = useCurrency();
+  const { rates } = useExchangeRates();
 
   const handleTypeChange = (type: TransactionType) => {
     setFormData(prev => ({
@@ -41,15 +69,11 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
   };
 
   const formatAmount = (value: string) => {
-    // Remove all non-numeric characters except decimal point
     const numericValue = value.replace(/[^0-9.]/g, '');
-    
-    // Handle multiple decimal points
     const parts = numericValue.split('.');
     if (parts.length > 2) {
       return parts[0] + '.' + parts.slice(1).join('');
     }
-    
     return numericValue;
   };
 
@@ -65,6 +89,20 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
     return num.toLocaleString('en-US');
   };
 
+  // Calculate exchange rate display
+  const exchangeRate = useMemo(() => {
+    if (transactionCurrency === globalCurrency) return null;
+    const rate = convertAmount(1, transactionCurrency, globalCurrency, rates);
+    return rate;
+  }, [transactionCurrency, globalCurrency, rates]);
+
+  const convertedAmount = useMemo(() => {
+    if (!formData.amount || transactionCurrency === globalCurrency) return null;
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount)) return null;
+    return convertAmount(amount, transactionCurrency, globalCurrency, rates);
+  }, [formData.amount, transactionCurrency, globalCurrency, rates]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -72,23 +110,40 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
     if (isNaN(amount) || amount <= 0) return;
 
     const transaction = {
-      id: generateId(),
+      id: editingTransaction?.id || generateId(),
       type: formData.type,
       category: formData.category as IncomeCategory | ExpenseCategory,
       amount,
       date: formData.date,
       notes: formData.notes.trim() || undefined,
-      currency: currency,
+      currency: transactionCurrency,
       ...(formData.type === 'expense' && {
         expenseType: formData.expenseType,
         isRecurring: formData.isRecurring
       })
     };
 
-    storageService.saveTransaction(transaction);
+    if (editingTransaction) {
+      storageService.updateTransaction(transaction);
+      onCancelEdit?.();
+    } else {
+      storageService.saveTransaction(transaction);
+    }
+    
     setFormData(initialFormData);
+    setTransactionCurrency(globalCurrency);
     setShowForm(false);
     onTransactionAdded();
+  };
+
+  const handleCancel = () => {
+    if (editingTransaction) {
+      onCancelEdit?.();
+    } else {
+      setShowForm(false);
+      setFormData(initialFormData);
+      setTransactionCurrency(globalCurrency);
+    }
   };
 
   const categories = formData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -108,7 +163,7 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
   return (
     <div className="transaction-form-overlay">
       <div className="transaction-form-container">
-        <h2>Add Transaction</h2>
+        <h2>{editingTransaction ? 'Edit Transaction' : 'Add Transaction'}</h2>
         
         <form onSubmit={handleSubmit} className="transaction-form">
           <div className="form-group type-selector">
@@ -198,7 +253,7 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
                   className="amount-input"
                   required
                 />
-                <span className="amount-currency">{CURRENCIES[currency].symbol}</span>
+                <span className="amount-currency">{CURRENCIES[transactionCurrency].symbol}</span>
               </div>
             </div>
 
@@ -217,18 +272,33 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
               <label htmlFor="currency">Currency</label>
               <select
                 id="currency"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as typeof currency)}
+                value={transactionCurrency}
+                onChange={(e) => setTransactionCurrency(e.target.value as CurrencyCode)}
                 className="currency-select"
               >
                 {Object.values(CURRENCIES).map((curr) => (
                   <option key={curr.code} value={curr.code}>
-                    {curr.flag} {curr.code}
+                    {curr.code} ({curr.symbol})
                   </option>
                 ))}
               </select>
             </div>
           </div>
+
+          {/* Exchange Rate Info */}
+          {exchangeRate && convertedAmount && (
+            <div className="exchange-rate-info">
+              <div className="rate-display">
+                <ArrowRightLeft size={14} className="rate-icon" />
+                <span className="rate-text">
+                  1 {transactionCurrency} = {exchangeRate.toFixed(4)} {globalCurrency}
+                </span>
+              </div>
+              <div className="converted-amount">
+                <span>≈ {formatCurrency(convertedAmount, globalCurrency)}</span>
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="notes">Notes (Optional)</label>
@@ -245,7 +315,7 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
             <button 
               type="button" 
               className="cancel-btn"
-              onClick={() => setShowForm(false)}
+              onClick={handleCancel}
             >
               Cancel
             </button>
@@ -253,7 +323,7 @@ export const TransactionForm = ({ onTransactionAdded }: TransactionFormProps) =>
               type="submit" 
               className="submit-btn"
             >
-              Save Transaction
+              {editingTransaction ? 'Update Transaction' : 'Save Transaction'}
             </button>
           </div>
         </form>

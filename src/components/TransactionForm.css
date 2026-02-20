@@ -154,6 +154,39 @@
   background-position: right 0.75rem center;
 }
 
+.exchange-rate-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  padding: 0.875rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -0.5rem;
+}
+
+.rate-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rate-icon {
+  color: var(--color-accent-blue);
+}
+
+.rate-text {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.converted-amount {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-accent-blue);
+}
+
 .type-selector .type-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
