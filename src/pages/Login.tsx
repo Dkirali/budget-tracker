@@ -308,7 +308,7 @@ export const Login = () => {
         {/* Password reminder */}
         {mode === 'login' && (
           <div className="password-reminder">
-            <p>Remember your password - there's no password reset available.</p>
+            <p>🔒 Your data is encrypted locally. Keep your password safe — no reset exists.</p>
           </div>
         )}
       </div>
