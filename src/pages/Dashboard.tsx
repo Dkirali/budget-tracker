@@ -7,7 +7,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Pencil,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -34,6 +35,7 @@ export const Dashboard = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
@@ -63,6 +65,7 @@ export const Dashboard = () => {
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
+    setFormOpen(true);
   };
 
   const handleCloseEditModal = () => {
@@ -140,7 +143,12 @@ export const Dashboard = () => {
             {format(currentDate, 'MMMM yyyy')}
           </p>
         </div>
-        <TransactionForm onTransactionAdded={loadTransactions} />
+        <button 
+          className="add-transaction-btn desktop-only"
+          onClick={() => setFormOpen(true)}
+        >
+          Add Transaction
+        </button>
       </header>
 
       <div className="stats-grid">
@@ -326,14 +334,27 @@ export const Dashboard = () => {
         </div>
       </div>
 
+      {/* Add Transaction Modal */}
+      <TransactionForm
+        isOpen={formOpen && !editingTransaction}
+        onClose={() => setFormOpen(false)}
+        onTransactionAdded={() => {
+          loadTransactions();
+          setFormOpen(false);
+        }}
+      />
+
       {/* Edit Transaction Modal */}
-      {editingTransaction && (
-        <TransactionForm
-          onTransactionAdded={loadTransactions}
-          editingTransaction={editingTransaction}
-          onCancelEdit={handleCloseEditModal}
-        />
-      )}
+      <TransactionForm
+        isOpen={!!editingTransaction}
+        onClose={handleCloseEditModal}
+        onTransactionAdded={() => {
+          loadTransactions();
+          handleCloseEditModal();
+        }}
+        editingTransaction={editingTransaction}
+        onCancelEdit={handleCloseEditModal}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
@@ -346,6 +367,15 @@ export const Dashboard = () => {
         cancelText="Cancel"
         type="danger"
       />
+
+      {/* Mobile FAB */}
+      <button 
+        className="fab-add mobile-only"
+        onClick={() => setFormOpen(true)}
+        aria-label="Add transaction"
+      >
+        <TrendingUp size={24} />
+      </button>
     </div>
   );
 };

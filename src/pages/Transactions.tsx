@@ -51,6 +51,7 @@ export const Transactions = () => {
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
+    setShowAddModal(false);
   };
 
   const handleCloseEditModal = () => {
@@ -219,24 +220,26 @@ export const Transactions = () => {
       </div>
 
       {/* Add Transaction Modal */}
-      {showAddModal && (
-        <TransactionForm
-          onTransactionAdded={() => {
-            loadTransactions();
-            setShowAddModal(false);
-          }}
-          onCancelEdit={() => setShowAddModal(false)}
-        />
-      )}
+      <TransactionForm
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onTransactionAdded={() => {
+          loadTransactions();
+          setShowAddModal(false);
+        }}
+      />
 
       {/* Edit Transaction Modal */}
-      {editingTransaction && (
-        <TransactionForm
-          onTransactionAdded={loadTransactions}
-          editingTransaction={editingTransaction}
-          onCancelEdit={handleCloseEditModal}
-        />
-      )}
+      <TransactionForm
+        isOpen={!!editingTransaction}
+        onClose={handleCloseEditModal}
+        onTransactionAdded={() => {
+          loadTransactions();
+          handleCloseEditModal();
+        }}
+        editingTransaction={editingTransaction}
+        onCancelEdit={handleCloseEditModal}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
