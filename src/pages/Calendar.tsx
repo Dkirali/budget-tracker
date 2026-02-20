@@ -179,52 +179,85 @@ export const Calendar = () => {
       </div>
 
       {/* Selected Day Details */}
-      {selectedDay && selectedDayStats && (
-        <div className="day-detail-panel">
-          <div className="detail-header">
-            <span className="detail-date">{format(selectedDay, 'EEEE, MMMM do')}</span>
-            <button 
-              className="close-detail"
-              onClick={() => setSelectedDay(null)}
-            >
-              ×
-            </button>
-          </div>
-          
-          {selectedDayStats.transactions.length > 0 ? (
-            <div className="detail-transactions">
-              {selectedDayStats.transactions.map(t => (
-                <div key={t.id} className={`detail-item ${t.type}`}>
-                  <div className="detail-left">
-                    <span className="detail-category">{t.category}</span>
-                    {t.notes && <span className="detail-notes">{t.notes}</span>}
-                  </div>
-                  <span className={`detail-amount ${t.type}`}>
-                    {t.type === 'income' ? '+' : '-'}
-                    {formatCurrency(convertAmount(t.amount, (t.currency || 'USD') as CurrencyCode, currency, rates), currency)}
-                  </span>
+      {selectedDay && (
+        <>
+          <div className="day-detail-backdrop" onClick={() => setSelectedDay(null)} />
+          <div className="day-detail-panel">
+            {/* Budget Status Header */}
+            <div className={`budget-status-header ${
+              !selectedDayStats || selectedDayStats.transactions.length === 0 
+                ? 'neutral' 
+                : selectedDayStats.expense > stats.dailyBudget 
+                  ? 'over-budget' 
+                  : 'under-budget'
+            }`}>
+              <div className="budget-status-content">
+                <div className="budget-status-label">
+                  {!selectedDayStats || selectedDayStats.transactions.length === 0 
+                    ? 'No Activity' 
+                    : selectedDayStats.expense > stats.dailyBudget 
+                      ? 'Over Budget' 
+                      : 'Money Saved'}
                 </div>
-              ))}
-              
-              <div className="detail-summary">
-                <div className="summary-line">
-                  <span>Total Spent</span>
-                  <span className="spent">{formatCurrency(convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)}</span>
-                </div>
-                <div className="summary-line">
-                  <span>Budget Left</span>
-                  <span className={selectedDayStats.expense > stats.dailyBudget ? 'over' : 'saved'}>
-                    {formatCurrency(stats.dailyBudget - convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)}
-                  </span>
+                <div className="budget-status-amount">
+                  {!selectedDayStats || selectedDayStats.transactions.length === 0 
+                    ? formatCurrency(0, currency)
+                    : selectedDayStats.expense > stats.dailyBudget 
+                      ? formatCurrency(convertAmount(selectedDayStats.expense, 'USD', currency, rates) - stats.dailyBudget, currency)
+                      : formatCurrency(stats.dailyBudget - convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)}
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="detail-empty">
-              <p>No transactions</p>
+
+            <div className="detail-header">
+              <span className="detail-date">{format(selectedDay, 'EEEE, MMMM do')}</span>
+              <button 
+                className="close-detail"
+                onClick={() => setSelectedDay(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-          )}
-        </div>
+            
+            {/* Daily Budget Summary */}
+            <div className="daily-budget-summary">
+              <div className="budget-summary-item">
+                <span className="budget-summary-label">Daily Budget</span>
+                <span className="budget-summary-value">{formatCurrency(stats.dailyBudget, currency)}</span>
+              </div>
+              <div className="budget-summary-item">
+                <span className="budget-summary-label">Total Spent</span>
+                <span className="budget-summary-value spent">
+                  {selectedDayStats 
+                    ? formatCurrency(convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)
+                    : formatCurrency(0, currency)}
+                </span>
+              </div>
+            </div>
+            
+            {selectedDayStats && selectedDayStats.transactions.length > 0 ? (
+              <div className="detail-transactions">
+                {selectedDayStats.transactions.map(t => (
+                  <div key={t.id} className={`detail-item ${t.type}`}>
+                    <div className="detail-left">
+                      <span className="detail-category">{t.category}</span>
+                      {t.notes && <span className="detail-notes">{t.notes}</span>}
+                    </div>
+                    <span className={`detail-amount ${t.type}`}>
+                      {t.type === 'income' ? '+' : '-'}
+                      {formatCurrency(convertAmount(t.amount, (t.currency || 'USD') as CurrencyCode, currency, rates), currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="detail-empty">
+                <p>No transactions for this day</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Add Transaction Modal */}

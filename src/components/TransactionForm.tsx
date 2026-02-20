@@ -123,15 +123,19 @@ export const TransactionForm = ({
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatAmount(e.target.value);
+    const rawValue = e.target.value;
+    // Allow user to type, only strip non-numeric except decimal point
+    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
     setFormData(prev => ({ ...prev, amount: formatted }));
   };
 
   const displayAmount = (value: string) => {
-    if (!value) return '';
-    const num = parseFloat(value);
-    if (isNaN(num)) return value;
-    return num.toLocaleString('en-US');
+    // Return raw value for controlled input - don't format with commas
+    // This ensures the cursor stays at the end and editing works smoothly
+    return value;
   };
 
   const exchangeRate = useMemo(() => {

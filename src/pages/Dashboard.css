@@ -538,3 +538,119 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* Pie Detail Modal */
+.pie-detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pie-detail-modal {
+  background: var(--color-bg-card);
+  border-radius: 1.25rem 1.25rem 0 0;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.pie-detail-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-bg-secondary);
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.pie-detail-close:active {
+  background: var(--color-bg-hover);
+}
+
+.pie-detail-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.5rem;
+}
+
+.pie-detail-color {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.pie-detail-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+  text-transform: capitalize;
+}
+
+.pie-detail-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.pie-detail-percent {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* Desktop pie detail modal */
+@media (min-width: 769px) {
+  .pie-detail-modal-overlay {
+    align-items: center;
+  }
+  
+  .pie-detail-modal {
+    border-radius: 1rem;
+    max-width: 360px;
+    animation: scaleIn 0.2s ease;
+  }
+  
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
+
+/* Mobile - Hide pie chart legend labels */
+@media (max-width: 768px) {
+  .recharts-pie-label-text {
+    font-size: 0.75rem;
+  }
+}
