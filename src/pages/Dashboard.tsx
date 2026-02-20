@@ -66,7 +66,6 @@ export const Dashboard = () => {
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    setFormOpen(true);
   };
 
   const handleCloseEditModal = () => {
