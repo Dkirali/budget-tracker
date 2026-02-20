@@ -260,6 +260,8 @@
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
+  flex: 1;
+  text-align: center;
 }
 
 /* FIXED ACTION BUTTONS AT BOTTOM */
