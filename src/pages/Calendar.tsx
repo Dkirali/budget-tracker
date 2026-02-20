@@ -123,25 +123,37 @@ export const Calendar = () => {
             
             {calendarDays.map((day) => {
               const dayStats = day.stats;
+              const incomeAmount = dayStats ? convertAmount(
+                dayStats.income,
+                'USD',
+                currency,
+                rates
+              ) : 0;
               const expenseAmount = dayStats ? convertAmount(
                 dayStats.expense,
                 'USD',
                 currency,
                 rates
               ) : 0;
+              const moneySaved = incomeAmount - expenseAmount;
               const spendingLevel = getSpendingLevel(expenseAmount, stats.dailyBudget);
               const isOverBudget = expenseAmount > stats.dailyBudget;
+              const isProfit = moneySaved > 0;
               const isSelected = selectedDay?.toDateString() === day.date.toDateString();
               const isTodayDate = isToday(day.date);
               
               return (
                 <div
                   key={day.date.toISOString()}
-                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isOverBudget ? 'over-budget' : ''} ${isTodayDate ? 'today' : ''} ${expenseAmount > 0 ? 'has-spending' : ''}`}
+                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isOverBudget ? 'over-budget' : ''} ${isTodayDate ? 'today' : ''} ${expenseAmount > 0 ? 'has-spending' : ''} ${isProfit ? 'profit-day' : ''}`}
                   style={{ '--spending-level': `${spendingLevel}%` } as React.CSSProperties}
                   onClick={() => setSelectedDay(day.date)}
                 >
                   <span className="day-number">{format(day.date, 'd')}</span>
+                  
+                  <div className="day-budget-info">
+                    <span className="daily-budget-label">{formatCurrency(stats.dailyBudget, currency)}</span>
+                  </div>
                   
                   {day.stats && day.stats.transactions.length > 0 && (
                     <div className="day-stats">
@@ -150,12 +162,25 @@ export const Calendar = () => {
                       )}
                       {day.stats.expense > 0 && (
                         <span className="day-expense">
-                          {isOverBudget && <AlertCircle size={10} className="over-budget-icon" />}
                           -{formatCurrency(day.stats.expense, currency)}
                         </span>
                       )}
                     </div>
                   )}
+                  
+                  <div className="day-status-indicators">
+                    {isOverBudget ? (
+                      <div className="status-badge over-budget-badge">
+                        <AlertCircle size={10} />
+                        <span>Over Budget</span>
+                      </div>
+                    ) : isProfit ? (
+                      <div className="status-badge profit-badge">
+                        <span className="profit-dot" />
+                        <span>Money Saved</span>
+                      </div>
+                    ) : null}
+                  </div>
                   
                   {day.stats && day.stats.transactions.length > 0 && (
                     <div className="day-indicators">

@@ -214,6 +214,23 @@
   background-clip: text;
 }
 
+.day-budget-info {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
+.daily-budget-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+}
+
 .day-stats {
   display: flex;
   flex-direction: column;
@@ -261,6 +278,56 @@
 
 .indicator.leisure {
   background: var(--color-accent-orange);
+}
+
+.day-status-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+  position: relative;
+  z-index: 1;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.status-badge.over-budget-badge {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: var(--color-accent-red-dark);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge.profit-badge {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: var(--color-accent-green-dark);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.profit-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent-green);
+  flex-shrink: 0;
+}
+
+.calendar-day.profit-day {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.calendar-day.profit-day::before {
+  background: linear-gradient(to top, rgba(16, 185, 129, 0.15), transparent);
 }
 
 .day-details {

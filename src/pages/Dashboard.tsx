@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { storageService } from '@/services/storage';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
@@ -31,6 +32,8 @@ export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentDate] = useState(new Date());
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
@@ -39,15 +42,31 @@ export const Dashboard = () => {
     setTransactions(data);
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    if (confirm('Are you sure you want to delete this transaction?')) {
-      storageService.deleteTransaction(id);
+  const handleDeleteClick = (id: string) => {
+    setTransactionToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (transactionToDelete) {
+      storageService.deleteTransaction(transactionToDelete);
       loadTransactions();
+      setDeleteModalOpen(false);
+      setTransactionToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setTransactionToDelete(null);
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingTransaction(null);
   };
 
   useEffect(() => {
@@ -121,15 +140,7 @@ export const Dashboard = () => {
             {format(currentDate, 'MMMM yyyy')}
           </p>
         </div>
-        {editingTransaction ? (
-          <TransactionForm 
-            onTransactionAdded={loadTransactions}
-            editingTransaction={editingTransaction}
-            onCancelEdit={() => setEditingTransaction(null)}
-          />
-        ) : (
-          <TransactionForm onTransactionAdded={loadTransactions} />
-        )}
+        <TransactionForm onTransactionAdded={loadTransactions} />
       </header>
 
       <div className="stats-grid">
@@ -301,7 +312,7 @@ export const Dashboard = () => {
                       </button>
                       <button 
                         className="action-btn delete"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        onClick={() => handleDeleteClick(transaction.id)}
                         title="Delete"
                       >
                         <Trash2 size={14} />
@@ -314,6 +325,27 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && (
+        <TransactionForm
+          onTransactionAdded={loadTransactions}
+          editingTransaction={editingTransaction}
+          onCancelEdit={handleCloseEditModal}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };
