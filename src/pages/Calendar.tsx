@@ -264,9 +264,12 @@ export const Calendar = () => {
       <TransactionForm
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
-        onTransactionAdded={async () => {
-          await loadTransactions();
+        onTransactionAdded={(transaction) => {
+          // Optimistically add to local state
+          setTransactions(prev => [transaction, ...prev]);
           setFormOpen(false);
+          // Sync with server in background
+          loadTransactions();
         }}
       />
     </div>

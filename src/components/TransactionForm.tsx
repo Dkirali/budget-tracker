@@ -18,7 +18,7 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import './TransactionForm.css';
 
 interface TransactionFormProps {
-  onTransactionAdded: () => void | Promise<void>;
+  onTransactionAdded: (transaction: Transaction) => void;
   editingTransaction?: Transaction | null;
   onCancelEdit?: () => void;
   isOpen: boolean;
@@ -176,7 +176,8 @@ export const TransactionForm = ({
 
       setFormData(initialFormData);
       setTransactionCurrency(globalCurrency);
-      await onTransactionAdded();
+      // Pass transaction back to parent for optimistic update
+      onTransactionAdded(transaction);
       onClose();
     } finally {
       setIsLoading(false);

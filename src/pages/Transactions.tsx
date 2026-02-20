@@ -223,9 +223,12 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onTransactionAdded={async () => {
-          await loadTransactions();
+        onTransactionAdded={(transaction) => {
+          // Optimistically add to local state
+          setTransactions(prev => [transaction, ...prev]);
           setShowAddModal(false);
+          // Sync with server in background
+          loadTransactions();
         }}
       />
 
@@ -233,9 +236,12 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
-        onTransactionAdded={async () => {
-          await loadTransactions();
+        onTransactionAdded={(transaction) => {
+          // Optimistically update local state
+          setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
           handleCloseEditModal();
+          // Sync with server in background
+          loadTransactions();
         }}
         editingTransaction={editingTransaction}
         onCancelEdit={handleCloseEditModal}

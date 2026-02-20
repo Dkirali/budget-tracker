@@ -2,14 +2,6 @@
   "transactions": {
     "6655af51-057c-42bc-9b82-f11f300d8a07": [
       {
-        "id": "1771624873905-5j7418xei",
-        "type": "income",
-        "category": "salary",
-        "amount": 6666,
-        "date": "2026-02-20",
-        "currency": "CAD"
-      },
-      {
         "id": "1771624897452-moggys9dt",
         "type": "expense",
         "category": "housing",
@@ -18,17 +10,6 @@
         "currency": "TRY",
         "expenseType": "mandatory",
         "isRecurring": true
-      },
-      {
-        "id": "1771624968720-b4gij6jil",
-        "type": "expense",
-        "category": "housing",
-        "amount": 11700,
-        "date": "2026-02-20",
-        "notes": "Aidat test",
-        "currency": "TRY",
-        "expenseType": "mandatory",
-        "isRecurring": false
       },
       {
         "id": "1771625033905-xg3q5m4sf",
@@ -56,7 +37,7 @@
         "id": "1771626571440-8ogamo3t8",
         "type": "expense",
         "category": "food",
-        "amount": 126,
+        "amount": 1267,
         "date": "2026-02-20",
         "currency": "TRY",
         "expenseType": "leisure",

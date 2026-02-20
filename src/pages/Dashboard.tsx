@@ -370,9 +370,12 @@ export const Dashboard = () => {
       <TransactionForm
         isOpen={formOpen && !editingTransaction}
         onClose={() => setFormOpen(false)}
-        onTransactionAdded={async () => {
-          await loadTransactions();
+        onTransactionAdded={(transaction: Transaction) => {
+          // Optimistically add to local state immediately
+          setTransactions(prev => [transaction, ...prev]);
           setFormOpen(false);
+          // Then sync with server in background
+          loadTransactions();
         }}
       />
 
@@ -380,9 +383,12 @@ export const Dashboard = () => {
       <TransactionForm
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
-        onTransactionAdded={async () => {
-          await loadTransactions();
+        onTransactionAdded={(transaction: Transaction) => {
+          // Optimistically update local state immediately
+          setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
           handleCloseEditModal();
+          // Then sync with server in background
+          loadTransactions();
         }}
         editingTransaction={editingTransaction}
         onCancelEdit={handleCloseEditModal}
