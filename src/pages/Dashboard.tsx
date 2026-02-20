@@ -141,7 +141,10 @@ export const Dashboard = () => {
     });
     
     return Object.entries(categoryTotals)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ 
+        name: name.charAt(0).toUpperCase() + name.slice(1), 
+        value 
+      }))
       .sort((a, b) => b.value - a.value);
   }, [transactions, currency, rates]);
 

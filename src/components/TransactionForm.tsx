@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowRightLeft, X } from 'lucide-react';
+import { ArrowRightLeft, X, Loader2 } from 'lucide-react';
 import type { 
   TransactionType, 
   TransactionFormData, 
@@ -56,11 +56,13 @@ export const TransactionForm = ({
       : initialFormData
   );
   
+  const { currency: globalCurrency } = useCurrency();
+  
   const [transactionCurrency, setTransactionCurrency] = useState<CurrencyCode>(
-    (editingTransaction?.currency as CurrencyCode) || 'USD'
+    (editingTransaction?.currency as CurrencyCode) || globalCurrency
   );
   
-  const { currency: globalCurrency } = useCurrency();
+  const [isLoading, setIsLoading] = useState(false);
   const { rates } = useExchangeRates();
 
   // Lock body scroll when modal is open
@@ -148,31 +150,37 @@ export const TransactionForm = ({
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) return;
 
-    const transaction = {
-      id: editingTransaction?.id || generateId(),
-      type: formData.type,
-      category: formData.category as IncomeCategory | ExpenseCategory,
-      amount,
-      date: formData.date,
-      notes: formData.notes.trim() || undefined,
-      currency: transactionCurrency,
-      ...(formData.type === 'expense' && {
-        expenseType: formData.expenseType,
-        isRecurring: formData.isRecurring
-      })
-    };
+    setIsLoading(true);
 
-    if (editingTransaction) {
-      await storageService.updateTransaction(transaction);
-      onCancelEdit?.();
-    } else {
-      await storageService.saveTransaction(transaction);
+    try {
+      const transaction = {
+        id: editingTransaction?.id || generateId(),
+        type: formData.type,
+        category: formData.category as IncomeCategory | ExpenseCategory,
+        amount,
+        date: formData.date,
+        notes: formData.notes.trim() || undefined,
+        currency: transactionCurrency,
+        ...(formData.type === 'expense' && {
+          expenseType: formData.expenseType,
+          isRecurring: formData.isRecurring
+        })
+      };
+
+      if (editingTransaction) {
+        await storageService.updateTransaction(transaction);
+        onCancelEdit?.();
+      } else {
+        await storageService.saveTransaction(transaction);
+      }
+
+      setFormData(initialFormData);
+      setTransactionCurrency(globalCurrency);
+      onClose();
+      onTransactionAdded();
+    } finally {
+      setIsLoading(false);
     }
-
-    setFormData(initialFormData);
-    setTransactionCurrency('USD');
-    onClose();
-    onTransactionAdded();
   };
 
   const handleCancel = () => {
@@ -180,7 +188,7 @@ export const TransactionForm = ({
       onCancelEdit?.();
     }
     setFormData(initialFormData);
-    setTransactionCurrency('USD');
+    setTransactionCurrency(globalCurrency);
     onClose();
   };
 
@@ -352,14 +360,23 @@ export const TransactionForm = ({
               type="button" 
               className="cancel-btn"
               onClick={handleCancel}
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button 
               type="submit" 
               className="submit-btn"
+              disabled={isLoading}
             >
-              {editingTransaction ? 'Update' : 'Save'}
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="spinner" />
+                  {editingTransaction ? 'Updating...' : 'Saving...'}
+                </>
+              ) : (
+                editingTransaction ? 'Update' : 'Save'
+              )}
             </button>
           </div>
         </form>
