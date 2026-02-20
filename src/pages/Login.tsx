@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Wallet } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Wallet, Fingerprint } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { validatePassword, getPasswordStrengthText, getPasswordStrengthColor } from '@/utils/passwordValidation';
 import './Login.css';
@@ -19,6 +19,23 @@ export const Login = () => {
     password: '',
   });
   const [emailError, setEmailError] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricError, setBiometricError] = useState('');
+  
+  // Check if biometric authentication is available
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      if (window.PublicKeyCredential) {
+        try {
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setBiometricAvailable(available);
+        } catch {
+          setBiometricAvailable(false);
+        }
+      }
+    };
+    checkBiometricSupport();
+  }, []);
   
   // Navigate to dashboard when authenticated
   useEffect(() => {
@@ -28,6 +45,41 @@ export const Login = () => {
   }, [isAuthenticated, navigate]);
   
   const passwordValidation = validatePassword(formData.password);
+  
+  // Handle biometric authentication
+  const handleBiometricAuth = async () => {
+    setBiometricError('');
+    
+    if (!window.PublicKeyCredential) {
+      setBiometricError('Biometric authentication not supported on this device');
+      return;
+    }
+    
+    try {
+      // For demo purposes - in production, this would be integrated with your auth backend
+      // and would retrieve stored credentials
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      
+      const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
+        challenge,
+        allowCredentials: [],
+        timeout: 60000,
+        userVerification: 'required',
+        rpId: window.location.hostname,
+      };
+      
+      await navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions,
+      });
+      
+      // If biometric auth succeeds, you would typically validate with backend
+      // For now, show a message that this is a demo
+      setBiometricError('Biometric auth successful! (Demo mode - use email/password)');
+    } catch (err) {
+      setBiometricError('Biometric authentication failed. Please use email and password.');
+    }
+  };
   
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -216,6 +268,27 @@ export const Login = () => {
               </>
             )}
           </button>
+          
+          {/* Biometric Authentication - Only on login mode */}
+          {mode === 'login' && biometricAvailable && (
+            <>
+              <div className="divider">
+                <span>or</span>
+              </div>
+              <button
+                type="button"
+                className="biometric-btn"
+                onClick={handleBiometricAuth}
+                disabled={isLoading}
+              >
+                <Fingerprint size={20} />
+                <span>Sign in with biometrics</span>
+              </button>
+              {biometricError && (
+                <div className="biometric-error">{biometricError}</div>
+              )}
+            </>
+          )}
         </form>
         
         {/* Toggle mode */}
@@ -235,7 +308,7 @@ export const Login = () => {
         {/* Password reminder */}
         {mode === 'login' && (
           <div className="password-reminder">
-            <p>💡 Remember your password - there's no password reset available.</p>
+            <p>Remember your password - there's no password reset available.</p>
           </div>
         )}
       </div>
