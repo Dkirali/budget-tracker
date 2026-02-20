@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { PlusCircle, ArrowRightLeft, X } from 'lucide-react';
+import { ArrowRightLeft, X } from 'lucide-react';
 import type { 
   TransactionType, 
   TransactionFormData, 
@@ -111,15 +111,6 @@ export const TransactionForm = ({
       type,
       category: (type === 'income' ? 'salary' : 'food') as IncomeCategory | ExpenseCategory
     }));
-  };
-
-  const formatAmount = (value: string) => {
-    const numericValue = value.replace(/[^0-9.]/g, '');
-    const parts = numericValue.split('.');
-    if (parts.length > 2) {
-      return parts[0] + '.' + parts.slice(1).join('');
-    }
-    return numericValue;
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

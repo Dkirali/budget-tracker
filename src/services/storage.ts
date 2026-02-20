@@ -34,7 +34,7 @@ export const storageService = {
 
   saveTransaction(transaction: Transaction, userId?: string): void {
     try {
-      const uid = userId || getCurrentUserId();
+      const uid = userId || getCurrentUserId() || undefined;
       const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
       const transactions = this.getTransactions(uid);
       transactions.push(transaction);
@@ -46,7 +46,7 @@ export const storageService = {
 
   updateTransaction(updatedTransaction: Transaction, userId?: string): void {
     try {
-      const uid = userId || getCurrentUserId();
+      const uid = userId || getCurrentUserId() || undefined;
       const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
       const transactions = this.getTransactions(uid);
       const index = transactions.findIndex(t => t.id === updatedTransaction.id);
@@ -61,7 +61,7 @@ export const storageService = {
 
   deleteTransaction(id: string, userId?: string): void {
     try {
-      const uid = userId || getCurrentUserId();
+      const uid = userId || getCurrentUserId() || undefined;
       const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
       const transactions = this.getTransactions(uid);
       const filtered = transactions.filter(t => t.id !== id);

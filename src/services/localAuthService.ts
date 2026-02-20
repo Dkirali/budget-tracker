@@ -1,5 +1,5 @@
 import SHA256 from 'crypto-js/sha256';
-import { v4 as uuidv4 } from '@/utils/uuid';
+import { uuidv4 } from '@/utils/uuid';
 import type { IAuthService, AuthResult } from './authService';
 import type { User, AuthSession, LoginCredentials, SignupData } from '@/context/AuthContext';
 

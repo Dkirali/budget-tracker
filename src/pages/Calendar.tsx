@@ -149,7 +149,7 @@ export const Calendar = () => {
                 className={`day-cell ${isSelected ? 'selected' : ''} ${isTodayDate ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
                 onClick={() => setSelectedDay(day.date)}
                 aria-label={format(day.date, 'MMMM do')}
-                aria-pressed={isSelected}
+                aria-pressed={!!isSelected}
               >
                 <span className="day-number">{format(day.date, 'd')}</span>
                 

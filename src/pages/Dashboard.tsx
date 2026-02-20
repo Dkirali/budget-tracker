@@ -8,7 +8,6 @@ import {
   ArrowDownRight,
   Pencil,
   Trash2,
-  Plus,
   X
 } from 'lucide-react';
 import { 
@@ -18,7 +17,7 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
-import { parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { storageService } from '@/services/storage';
@@ -32,7 +31,6 @@ import './Dashboard.css';
 
 export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentDate] = useState(new Date());
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);

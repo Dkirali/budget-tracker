@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Wallet, Sun, Moon, DollarSign, Settings, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, Wallet, Sun, Moon, DollarSign, User, LogOut } from 'lucide-react';
 import { useTheme } from '@/context/useTheme';
 import { useCurrency } from '@/context/useCurrency';
 import { useAuth } from '@/context/AuthContext';

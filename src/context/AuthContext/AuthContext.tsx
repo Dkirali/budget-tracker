@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const googleLogin = useCallback(async (credential: string) => {
+  const googleLogin = useCallback(async (_credential: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
