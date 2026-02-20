@@ -1,0 +1,15 @@
+{
+  "users": {
+    "6655af51-057c-42bc-9b82-f11f300d8a07": {
+      "user": {
+        "id": "6655af51-057c-42bc-9b82-f11f300d8a07",
+        "email": "Kiralidoruk@gmail.com",
+        "name": "Doruk Kirali",
+        "authProvider": "password",
+        "createdAt": "2026-02-20T14:30:25.303Z"
+      },
+      "passwordHash": "849f1575ccfbf3a4d6cf00e6c5641b7fd4da2ed3e212c2d79ba9161a5a432ff0"
+    }
+  },
+  "sessions": {}
+}

@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { SettingsContext } from './SettingsContextDefinition';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme as useExistingTheme } from '@/context/useTheme';
-import { useCurrency as useExistingCurrency } from '@/context/useCurrency';
+import { useCurrency } from '@/context/useCurrency';
 import { uuidv4 } from '@/utils/uuid';
 import type { UserSettings, BudgetCycle, NotificationSettings } from './settingsTypes';
 import { DEFAULT_SETTINGS } from './settingsTypes';
@@ -11,11 +10,11 @@ const getStorageKey = (userId: string) => `budget-tracker-settings-${userId}`;
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const { theme: existingTheme, setTheme: setExistingTheme } = useExistingTheme();
-  const { currency: existingCurrency, setCurrency: setExistingCurrency } = useExistingCurrency();
+  const { currency: globalCurrency, setCurrency: setGlobalCurrency } = useCurrency();
   
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
+  const isUpdatingFromGlobal = useRef(false);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -38,21 +37,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           cycles: parsed.cycles || DEFAULT_SETTINGS.cycles,
           notifications: { ...DEFAULT_SETTINGS.notifications, ...parsed.notifications },
         });
-        
-        // Sync with existing contexts
-        if (parsed.theme) {
-          setExistingTheme(parsed.theme);
-        }
-        if (parsed.defaultCurrency) {
-          setExistingCurrency(parsed.defaultCurrency as typeof existingCurrency);
-        }
       } else {
-        // New user - use defaults but sync with existing contexts
-        setSettings(prev => ({
-          ...prev,
-          theme: existingTheme,
-          defaultCurrency: existingCurrency,
-        }));
+        // New user - use defaults
+        setSettings(DEFAULT_SETTINGS);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -60,7 +47,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, user, existingTheme, existingCurrency, setExistingTheme, setExistingCurrency]);
+  }, [isAuthenticated, user]);
 
   // Save settings to localStorage
   const saveSettings = useCallback(() => {
@@ -80,6 +67,25 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       saveSettings();
     }
   }, [settings, isLoading, user, saveSettings]);
+
+  // Sync currency from CurrencyContext (when changed from header/navigation)
+  useEffect(() => {
+    if (!isLoading && globalCurrency && globalCurrency !== settings.defaultCurrency) {
+      isUpdatingFromGlobal.current = true;
+      setSettings(prev => ({ ...prev, defaultCurrency: globalCurrency }));
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isUpdatingFromGlobal.current = false;
+      }, 0);
+    }
+  }, [globalCurrency, isLoading, settings.defaultCurrency]);
+
+  // Sync currency from SettingsContext to CurrencyContext (when changed from Settings page)
+  useEffect(() => {
+    if (!isLoading && !isUpdatingFromGlobal.current && settings.defaultCurrency && settings.defaultCurrency !== globalCurrency) {
+      setGlobalCurrency(settings.defaultCurrency as typeof globalCurrency);
+    }
+  }, [settings.defaultCurrency, isLoading, globalCurrency, setGlobalCurrency]);
 
   // Cycle Management
   const addCycle = useCallback((cycle: Omit<BudgetCycle, 'id'>) => {
@@ -131,24 +137,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return settings.cycles.find(cycle => cycle.id === settings.activeCycleId) || null;
   }, [settings.activeCycleId, settings.cycles]);
 
-  // Notification Settings
-  const updateNotificationSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
-    setSettings(prev => ({
-      ...prev,
-      notifications: { ...prev.notifications, ...newSettings },
-    }));
+  // Notification Settings - DISABLED (no-op functions)
+  const updateNotificationSettings = useCallback((_newSettings: Partial<NotificationSettings>) => {
+    // Notifications are disabled - do nothing
+    console.log('Notifications are disabled');
   }, []);
 
-  // Display Settings
+  // Display Settings - These just update the settings state
+  // The actual theme/currency switching is handled by their respective contexts
   const setTheme = useCallback((theme: 'light' | 'dark') => {
     setSettings(prev => ({ ...prev, theme }));
-    setExistingTheme(theme);
-  }, [setExistingTheme]);
+  }, []);
 
   const setDefaultCurrency = useCallback((currency: string) => {
     setSettings(prev => ({ ...prev, defaultCurrency: currency }));
-    setExistingCurrency(currency as typeof existingCurrency);
-  }, [setExistingCurrency, existingCurrency]);
+  }, []);
 
   const contextValue = useMemo(
     () => ({

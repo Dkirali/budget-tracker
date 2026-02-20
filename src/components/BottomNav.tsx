@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Calendar } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import './BottomNav.css';
 
@@ -46,6 +46,15 @@ export const BottomNav = () => {
       >
         <Calendar size={24} strokeWidth={isActive('/calendar') ? 2.5 : 2} />
         <span className="bottom-nav-label">Calendar</span>
+      </NavLink>
+      
+      <NavLink 
+        to="/settings" 
+        className={`bottom-nav-item ${isActive('/settings') ? 'active' : ''}`}
+        aria-current={isActive('/settings') ? 'page' : undefined}
+      >
+        <Settings size={24} strokeWidth={isActive('/settings') ? 2.5 : 2} />
+        <span className="bottom-nav-label">Settings</span>
       </NavLink>
     </nav>
   );

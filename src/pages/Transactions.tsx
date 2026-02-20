@@ -21,8 +21,8 @@ export const Transactions = () => {
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
-  const loadTransactions = () => {
-    const data = storageService.getTransactions();
+  const loadTransactions = async () => {
+    const data = await storageService.getTransactions();
     setTransactions(data);
   };
 
@@ -35,10 +35,10 @@ export const Transactions = () => {
     setDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (transactionToDelete) {
-      storageService.deleteTransaction(transactionToDelete);
-      loadTransactions();
+      await storageService.deleteTransaction(transactionToDelete);
+      await loadTransactions();
       setDeleteModalOpen(false);
       setTransactionToDelete(null);
     }

@@ -118,6 +118,17 @@ body::before {
     radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
 }
 
+body.on-login-page::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  pointer-events: none !important;
+}
+
+body.on-login-page {
+  background: #0f1624 !important;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;

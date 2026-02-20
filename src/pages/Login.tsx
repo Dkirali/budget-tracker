@@ -22,6 +22,14 @@ export const Login = () => {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricError, setBiometricError] = useState('');
   
+  // Add body class to hide gradient
+  useEffect(() => {
+    document.body.classList.add('on-login-page');
+    return () => {
+      document.body.classList.remove('on-login-page');
+    };
+  }, []);
+  
   // Check if biometric authentication is available
   useEffect(() => {
     const checkBiometricSupport = async () => {
@@ -76,7 +84,7 @@ export const Login = () => {
       // If biometric auth succeeds, you would typically validate with backend
       // For now, show a message that this is a demo
       setBiometricError('Biometric auth successful! (Demo mode - use email/password)');
-    } catch (err) {
+    } catch {
       setBiometricError('Biometric authentication failed. Please use email and password.');
     }
   };
@@ -162,7 +170,7 @@ export const Login = () => {
           {/* Email field */}
           <div className="form-group">
             <label htmlFor="email">Email</label>
-            <div className="input-wrapper">
+            <div className={`input-wrapper ${emailError ? 'error' : ''}`}>
               <Mail size={20} className="input-icon" />
               <input
                 type="email"
@@ -174,7 +182,7 @@ export const Login = () => {
                 }}
                 placeholder="you@example.com"
                 required
-                className={`login-input ${emailError ? 'error' : ''}`}
+                className="login-input"
               />
             </div>
             {emailError && <span className="error-text">{emailError}</span>}
@@ -295,22 +303,17 @@ export const Login = () => {
         <div className="login-footer">
           <p>
             {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
-            <button
-              type="button"
-              className="toggle-mode-btn"
-              onClick={toggleMode}
-            >
-              {mode === 'login' ? 'Sign Up' : 'Sign In'}
-            </button>
           </p>
+          <button
+            type="button"
+            className="signup-secondary-btn"
+            onClick={toggleMode}
+          >
+            {mode === 'login' ? 'Sign Up' : 'Sign In'}
+          </button>
         </div>
         
-        {/* Password reminder */}
-        {mode === 'login' && (
-          <div className="password-reminder">
-            <p>🔒 Your data is encrypted locally. Keep your password safe — no reset exists.</p>
-          </div>
-        )}
+
       </div>
     </div>
   );

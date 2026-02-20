@@ -40,8 +40,8 @@ export const Dashboard = () => {
   const { rates } = useExchangeRates();
   const { getActiveCycle } = useSettings();
 
-  const loadTransactions = () => {
-    const data = storageService.getTransactions();
+  const loadTransactions = async () => {
+    const data = await storageService.getTransactions();
     setTransactions(data);
   };
 
@@ -50,10 +50,10 @@ export const Dashboard = () => {
     setDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (transactionToDelete) {
-      storageService.deleteTransaction(transactionToDelete);
-      loadTransactions();
+      await storageService.deleteTransaction(transactionToDelete);
+      await loadTransactions();
       setDeleteModalOpen(false);
       setTransactionToDelete(null);
     }

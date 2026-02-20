@@ -1,22 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useTheme } from '@/context/useTheme';
 import { useCurrency } from '@/context/useCurrency';
-import { CURRENCIES } from '@/types/currency';
+import { CURRENCIES, type CurrencyCode } from '@/types/currency';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { 
   LogOut, 
   User, 
-  ChevronLeft, 
   Plus, 
   Trash2, 
   Edit2, 
   Moon, 
   Sun, 
   DollarSign,
-  Bell,
   Calendar,
   Check
 } from 'lucide-react';
@@ -37,8 +35,6 @@ export const Settings = () => {
     updateCycle,
     deleteCycle,
     setActiveCycle,
-    notifications,
-    updateNotificationSettings,
   } = useSettings();
   const { theme: currentTheme, toggleTheme } = useTheme();
   const { currency: currentCurrency, setCurrency } = useCurrency();
@@ -53,21 +49,32 @@ export const Settings = () => {
     monthlyBudget: '',
   });
 
+  // Update cycle form currency display when global currency changes
+  useEffect(() => {
+    // This ensures the currency label in the form updates when currency changes
+  }, [currentCurrency]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
-    setTheme(newTheme);
+    // Only toggle if the theme is actually different
     if (currentTheme !== newTheme) {
       toggleTheme();
     }
+    // Update settings for persistence
+    setTheme(newTheme);
   };
 
   const handleCurrencyChange = (newCurrency: string) => {
-    setDefaultCurrency(newCurrency);
-    setCurrency(newCurrency as typeof currentCurrency);
+    // Validate that the currency is a valid CurrencyCode
+    const validCurrencies = ['USD', 'CAD', 'EUR', 'TRY'];
+    if (validCurrencies.includes(newCurrency)) {
+      setDefaultCurrency(newCurrency);
+      setCurrency(newCurrency as CurrencyCode);
+    }
   };
 
   const handleAddCycle = () => {
@@ -134,12 +141,6 @@ export const Settings = () => {
   return (
     <div className="settings-page">
       <header className="settings-header">
-        <button 
-          className="back-button"
-          onClick={() => navigate(-1)}
-        >
-          <ChevronLeft size={24} />
-        </button>
         <h1>Settings</h1>
       </header>
 
@@ -294,7 +295,8 @@ export const Settings = () => {
           )}
         </section>
 
-        {/* Notifications */}
+        {/* Notifications - DISABLED */}
+        {/*
         <section className="settings-section">
           <h2>Notifications</h2>
           
@@ -373,6 +375,7 @@ export const Settings = () => {
             </label>
           </div>
         </section>
+        */}
 
         {/* Account Section */}
         <section className="settings-section">

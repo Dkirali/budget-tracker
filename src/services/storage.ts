@@ -1,11 +1,8 @@
 import type { Transaction } from '@/types';
 
-const STORAGE_KEY = 'budget-tracker-transactions';
+const API_URL = 'http://localhost:3002/api';
 
-// Helper to get user-specific storage key
-const getUserStorageKey = (userId: string): string => `${STORAGE_KEY}-${userId}`;
-
-// Get current user ID from auth session
+// Helper to get current user ID from auth session
 const getCurrentUserId = (): string | null => {
   try {
     const session = localStorage.getItem('budget-tracker-auth-session');
@@ -20,64 +17,125 @@ const getCurrentUserId = (): string | null => {
 };
 
 export const storageService = {
-  getTransactions(userId?: string): Transaction[] {
+  async getTransactions(userId?: string): Promise<Transaction[]> {
     try {
       const uid = userId || getCurrentUserId();
-      const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : [];
+      if (!uid) {
+        console.warn('No user ID available for fetching transactions');
+        return [];
+      }
+
+      const response = await fetch(`${API_URL}/transactions/${uid}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.transactions || [];
     } catch (error) {
-      console.error('Error reading from localStorage:', error);
+      console.error('Error fetching transactions:', error);
       return [];
     }
   },
 
-  saveTransaction(transaction: Transaction, userId?: string): void {
-    try {
-      const uid = userId || getCurrentUserId() || undefined;
-      const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
-      const transactions = this.getTransactions(uid);
-      transactions.push(transaction);
-      localStorage.setItem(key, JSON.stringify(transactions));
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-    }
-  },
-
-  updateTransaction(updatedTransaction: Transaction, userId?: string): void {
-    try {
-      const uid = userId || getCurrentUserId() || undefined;
-      const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
-      const transactions = this.getTransactions(uid);
-      const index = transactions.findIndex(t => t.id === updatedTransaction.id);
-      if (index !== -1) {
-        transactions[index] = updatedTransaction;
-        localStorage.setItem(key, JSON.stringify(transactions));
-      }
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-    }
-  },
-
-  deleteTransaction(id: string, userId?: string): void {
-    try {
-      const uid = userId || getCurrentUserId() || undefined;
-      const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
-      const transactions = this.getTransactions(uid);
-      const filtered = transactions.filter(t => t.id !== id);
-      localStorage.setItem(key, JSON.stringify(filtered));
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-    }
-  },
-
-  clearAll(userId?: string): void {
+  async saveTransaction(transaction: Transaction, userId?: string): Promise<boolean> {
     try {
       const uid = userId || getCurrentUserId();
-      const key = uid ? getUserStorageKey(uid) : STORAGE_KEY;
-      localStorage.removeItem(key);
+      if (!uid) {
+        console.warn('No user ID available for saving transaction');
+        return false;
+      }
+
+      const response = await fetch(`${API_URL}/transactions/${uid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transaction),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return true;
     } catch (error) {
-      console.error('Error clearing storage:', error);
+      console.error('Error saving transaction:', error);
+      return false;
+    }
+  },
+
+  async updateTransaction(updatedTransaction: Transaction, userId?: string): Promise<boolean> {
+    try {
+      const uid = userId || getCurrentUserId();
+      if (!uid) {
+        console.warn('No user ID available for updating transaction');
+        return false;
+      }
+
+      const response = await fetch(`${API_URL}/transactions/${uid}/${updatedTransaction.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTransaction),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      return false;
+    }
+  },
+
+  async deleteTransaction(id: string, userId?: string): Promise<boolean> {
+    try {
+      const uid = userId || getCurrentUserId();
+      if (!uid) {
+        console.warn('No user ID available for deleting transaction');
+        return false;
+      }
+
+      const response = await fetch(`${API_URL}/transactions/${uid}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      return false;
+    }
+  },
+
+  async clearAll(userId?: string): Promise<boolean> {
+    try {
+      const uid = userId || getCurrentUserId();
+      if (!uid) {
+        console.warn('No user ID available for clearing transactions');
+        return false;
+      }
+
+      const response = await fetch(`${API_URL}/transactions/${uid}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error clearing transactions:', error);
+      return false;
     }
   }
 };

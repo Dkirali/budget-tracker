@@ -142,9 +142,9 @@ export const TransactionForm = ({
     return convertAmount(amount, transactionCurrency, globalCurrency, rates);
   }, [formData.amount, transactionCurrency, globalCurrency, rates]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) return;
 
@@ -163,12 +163,12 @@ export const TransactionForm = ({
     };
 
     if (editingTransaction) {
-      storageService.updateTransaction(transaction);
+      await storageService.updateTransaction(transaction);
       onCancelEdit?.();
     } else {
-      storageService.saveTransaction(transaction);
+      await storageService.saveTransaction(transaction);
     }
-    
+
     setFormData(initialFormData);
     setTransactionCurrency('USD');
     onClose();

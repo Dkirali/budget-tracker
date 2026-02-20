@@ -19,8 +19,8 @@ export const Calendar = () => {
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
-  const loadTransactions = () => {
-    const data = storageService.getTransactions();
+  const loadTransactions = async () => {
+    const data = await storageService.getTransactions();
     setTransactions(data);
   };
 
