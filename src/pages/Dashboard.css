@@ -464,3 +464,45 @@
     gap: 2rem;
   }
 }
+
+/* Mobile FAB button */
+.fab-add {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .fab-add {
+    display: flex;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+    color: white;
+    border: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0));
+    right: 1rem;
+    z-index: 50;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .fab-add:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) {
+  .stat-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .stat-card:active {
+    transform: scale(0.98);
+  }
+}

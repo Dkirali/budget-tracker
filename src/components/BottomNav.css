@@ -1,0 +1,83 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--color-bg-card);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  
+  /* Safe area support for notched devices */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0.5rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-radius: 0.75rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+  transform: scale(0.95);
+  background: var(--color-bg-hover);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-accent-blue);
+}
+
+.bottom-nav-item.active svg {
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+.bottom-nav-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Hide bottom nav on larger screens - show top nav instead */
+@media (min-width: 769px) {
+  .bottom-nav {
+    display: none;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .bottom-nav {
+    height: 60px;
+  }
+  
+  .bottom-nav-item {
+    min-width: 60px;
+  }
+  
+  .bottom-nav-label {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Dark mode support */
+.dark .bottom-nav {
+  background: var(--color-bg-secondary);
+  border-top-color: var(--color-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
