@@ -18,13 +18,14 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { storageService } from '@/services/storage';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
 import { useExchangeRates } from '@/context/useExchangeRates';
+import { useSettings } from '@/context/SettingsContext';
 import { convertAmount, calculateTotalInCurrency } from '@/utils/conversions';
 import type { Transaction, CurrencyCode } from '@/types';
 import './Dashboard.css';
@@ -39,6 +40,7 @@ export const Dashboard = () => {
   const [selectedPieSlice, setSelectedPieSlice] = useState<{name: string; value: number; color: string; percent: number} | null>(null);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
+  const { getActiveCycle } = useSettings();
 
   const loadTransactions = () => {
     const data = storageService.getTransactions();
@@ -76,6 +78,9 @@ export const Dashboard = () => {
     loadTransactions();
   }, []);
 
+  // Get active budget cycle
+  const activeCycle = getActiveCycle();
+
   // Calculate stats with currency conversion
   const stats = useMemo(() => {
     // Convert all amounts to selected currency
@@ -96,14 +101,31 @@ export const Dashboard = () => {
       currency,
       rates
     );
+
+    // Calculate days in cycle
+    let daysInCycle = 30; // Default
+    if (activeCycle) {
+      if (activeCycle.startDay <= activeCycle.endDay) {
+        daysInCycle = activeCycle.endDay - activeCycle.startDay + 1;
+      } else {
+        // Cycle spans month boundary (e.g., 24th to 23rd)
+        daysInCycle = (31 - activeCycle.startDay + 1) + activeCycle.endDay;
+      }
+    }
+
+    // Use cycle budget if available, otherwise calculate from income
+    const monthlyBudget = activeCycle?.monthlyBudget || Math.max(0, convertedIncome - convertedMandatory);
     
     return {
       totalIncome: convertedIncome,
       totalExpense: convertedExpense,
       moneySaved: convertedIncome - convertedExpense,
-      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30)
+      dailyBudget: monthlyBudget / daysInCycle,
+      monthlyBudget,
+      daysInCycle,
+      activeCycleName: activeCycle?.name || 'Monthly'
     };
-  }, [transactions, currency, rates]);
+  }, [transactions, currency, rates, activeCycle]);
 
   // Calculate spending breakdown by category for pie chart
   const spendingByCategory = useMemo(() => {
@@ -140,7 +162,7 @@ export const Dashboard = () => {
           <h1>Dashboard</h1>
           <p className="current-month">
             <Calendar size={14} />
-            {format(currentDate, 'MMMM yyyy')}
+            {stats.activeCycleName}
           </p>
         </div>
         <button 
@@ -201,7 +223,10 @@ export const Dashboard = () => {
             <span className="stat-label">Daily Budget</span>
             <span className="stat-value">{formatCurrency(stats.dailyBudget, currency)}</span>
             <span className="stat-trend info">
-              Per day available
+              {activeCycle 
+                ? `Day ${activeCycle.startDay}-${activeCycle.endDay}`
+                : 'Per day available'
+              }
             </span>
           </div>
         </div>
