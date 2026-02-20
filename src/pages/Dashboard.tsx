@@ -370,8 +370,8 @@ export const Dashboard = () => {
       <TransactionForm
         isOpen={formOpen && !editingTransaction}
         onClose={() => setFormOpen(false)}
-        onTransactionAdded={() => {
-          loadTransactions();
+        onTransactionAdded={async () => {
+          await loadTransactions();
           setFormOpen(false);
         }}
       />
@@ -380,8 +380,8 @@ export const Dashboard = () => {
       <TransactionForm
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
-        onTransactionAdded={() => {
-          loadTransactions();
+        onTransactionAdded={async () => {
+          await loadTransactions();
           handleCloseEditModal();
         }}
         editingTransaction={editingTransaction}

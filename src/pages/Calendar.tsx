@@ -264,8 +264,8 @@ export const Calendar = () => {
       <TransactionForm
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
-        onTransactionAdded={() => {
-          loadTransactions();
+        onTransactionAdded={async () => {
+          await loadTransactions();
           setFormOpen(false);
         }}
       />

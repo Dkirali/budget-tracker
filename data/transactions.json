@@ -47,9 +47,19 @@
         "category": "business",
         "amount": 8400,
         "date": "2026-02-15",
-        "notes": "Eski Mali Musavir",
+        "notes": "Eski Mali Musavir test",
         "currency": "TRY",
         "expenseType": "mandatory",
+        "isRecurring": false
+      },
+      {
+        "id": "1771626571440-8ogamo3t8",
+        "type": "expense",
+        "category": "food",
+        "amount": 1,
+        "date": "2026-02-20",
+        "currency": "TRY",
+        "expenseType": "leisure",
         "isRecurring": false
       }
     ]

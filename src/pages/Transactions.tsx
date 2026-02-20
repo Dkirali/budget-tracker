@@ -223,8 +223,8 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onTransactionAdded={() => {
-          loadTransactions();
+        onTransactionAdded={async () => {
+          await loadTransactions();
           setShowAddModal(false);
         }}
       />
@@ -233,8 +233,8 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
-        onTransactionAdded={() => {
-          loadTransactions();
+        onTransactionAdded={async () => {
+          await loadTransactions();
           handleCloseEditModal();
         }}
         editingTransaction={editingTransaction}
