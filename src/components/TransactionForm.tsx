@@ -271,15 +271,18 @@ export const TransactionForm = ({
                   </div>
                 </div>
 
-                <div className="form-group checkbox-group">
-                  <label className="checkbox-label">
+                <div className="form-group">
+                  <div className="recurring-toggle">
                     <input
                       type="checkbox"
+                      id="recurring-checkbox"
                       checked={formData.isRecurring}
                       onChange={(e) => setFormData(prev => ({ ...prev, isRecurring: e.target.checked }))}
                     />
-                    <span>Recurring</span>
-                  </label>
+                    <label htmlFor="recurring-checkbox">
+                      Recurring
+                    </label>
+                  </div>
                 </div>
               </>
             )}
