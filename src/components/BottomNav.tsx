@@ -1,9 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Receipt, Calendar } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import './BottomNav.css';
 
 export const BottomNav = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  
+  // Don't show bottom nav on login page or when not authenticated
+  if (!isAuthenticated || location.pathname === '/login') {
+    return null;
+  }
   
   const isActive = (path: string) => {
     if (path === '/') {

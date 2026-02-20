@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Wallet } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -9,7 +9,7 @@ type AuthMode = 'login' | 'signup';
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { login, signup, isLoading, error, clearError } = useAuth();
+  const { login, signup, isLoading, error, clearError, isAuthenticated } = useAuth();
   
   const [mode, setMode] = useState<AuthMode>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +19,13 @@ export const Login = () => {
     password: '',
   });
   const [emailError, setEmailError] = useState('');
+  
+  // Navigate to dashboard when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
   
   const passwordValidation = validatePassword(formData.password);
   
@@ -55,9 +62,7 @@ export const Login = () => {
         password: formData.password,
       });
     }
-    
-    // Navigate to dashboard on success
-    navigate('/');
+    // Navigation happens automatically via useEffect when isAuthenticated becomes true
   };
   
   const toggleMode = () => {
