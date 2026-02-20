@@ -187,3 +187,73 @@ body::before {
   mask-composite: exclude;
   pointer-events: none;
 }
+
+/* App Container - Mobile First */
+.app-container {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.main-content {
+  padding-top: 96px; /* Space for header + ticker */
+  min-height: 100vh;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0));
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 80px;
+  }
+  
+  /* Hide top navigation on mobile */
+  .navigation {
+    display: none;
+  }
+  
+  /* Adjust exchange rate ticker for mobile */
+  .exchange-rate-ticker {
+    top: 0;
+  }
+  
+  .main-content {
+    padding-top: 48px;
+  }
+}
+
+/* Tablet and desktop - show top nav, hide bottom nav */
+@media (min-width: 769px) {
+  .main-content {
+    padding-bottom: 0;
+    padding-top: 112px;
+  }
+  
+  .navigation {
+    display: flex;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) {
+  *:hover {
+    transform: none !important;
+  }
+  
+  .card-hover:active {
+    transform: scale(0.98);
+  }
+}
+
+/* iOS input zoom prevention */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}

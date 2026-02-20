@@ -464,3 +464,193 @@
     gap: 2rem;
   }
 }
+
+/* Mobile FAB button */
+.fab-add {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .fab-add {
+    display: flex;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+    color: white;
+    border: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0));
+    right: 1rem;
+    z-index: 50;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .fab-add:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) {
+  .stat-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .stat-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Utility classes for responsive visibility */
+.desktop-only {
+  display: none;
+}
+
+.mobile-only {
+  display: flex;
+}
+
+@media (min-width: 769px) {
+  .desktop-only {
+    display: flex;
+  }
+  
+  .mobile-only {
+    display: none;
+  }
+}
+
+.add-transaction-btn.desktop-only {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Pie Detail Modal */
+.pie-detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pie-detail-modal {
+  background: var(--color-bg-card);
+  border-radius: 1.25rem 1.25rem 0 0;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.pie-detail-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-bg-secondary);
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.pie-detail-close:active {
+  background: var(--color-bg-hover);
+}
+
+.pie-detail-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.5rem;
+}
+
+.pie-detail-color {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.pie-detail-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem;
+  text-transform: capitalize;
+}
+
+.pie-detail-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.pie-detail-percent {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* Desktop pie detail modal */
+@media (min-width: 769px) {
+  .pie-detail-modal-overlay {
+    align-items: center;
+  }
+  
+  .pie-detail-modal {
+    border-radius: 1rem;
+    max-width: 360px;
+    animation: scaleIn 0.2s ease;
+  }
+  
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
+
+/* Mobile - Hide pie chart legend labels */
+@media (max-width: 768px) {
+  .recharts-pie-label-text {
+    font-size: 0.75rem;
+  }
+}

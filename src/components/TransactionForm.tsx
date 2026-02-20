@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { PlusCircle, ArrowRightLeft } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { PlusCircle, ArrowRightLeft, X } from 'lucide-react';
 import type { 
   TransactionType, 
   TransactionFormData, 
@@ -21,6 +21,8 @@ interface TransactionFormProps {
   onTransactionAdded: () => void;
   editingTransaction?: Transaction | null;
   onCancelEdit?: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const initialFormData: TransactionFormData = {
@@ -36,7 +38,9 @@ const initialFormData: TransactionFormData = {
 export const TransactionForm = ({ 
   onTransactionAdded, 
   editingTransaction,
-  onCancelEdit 
+  onCancelEdit,
+  isOpen,
+  onClose
 }: TransactionFormProps) => {
   const [formData, setFormData] = useState<TransactionFormData>(
     editingTransaction 
@@ -51,14 +55,55 @@ export const TransactionForm = ({
         }
       : initialFormData
   );
-  const [showForm, setShowForm] = useState(!!editingTransaction);
-  // Local currency state for this transaction only
+  
   const [transactionCurrency, setTransactionCurrency] = useState<CurrencyCode>(
     (editingTransaction?.currency as CurrencyCode) || 'USD'
   );
   
   const { currency: globalCurrency } = useCurrency();
   const { rates } = useExchangeRates();
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
+  }, [isOpen]);
+
+  // Update form when editing transaction changes
+  useEffect(() => {
+    if (editingTransaction) {
+      setFormData({
+        type: editingTransaction.type,
+        category: editingTransaction.category,
+        amount: editingTransaction.amount.toString(),
+        date: editingTransaction.date,
+        notes: editingTransaction.notes || '',
+        expenseType: editingTransaction.expenseType || 'leisure',
+        isRecurring: editingTransaction.isRecurring || false
+      });
+      setTransactionCurrency((editingTransaction?.currency as CurrencyCode) || 'USD');
+    }
+  }, [editingTransaction]);
 
   const handleTypeChange = (type: TransactionType) => {
     setFormData(prev => ({
@@ -78,18 +123,21 @@ export const TransactionForm = ({
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatAmount(e.target.value);
+    const rawValue = e.target.value;
+    // Allow user to type, only strip non-numeric except decimal point
+    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+    // Prevent multiple decimal points
+    const parts = cleaned.split('.');
+    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
     setFormData(prev => ({ ...prev, amount: formatted }));
   };
 
   const displayAmount = (value: string) => {
-    if (!value) return '';
-    const num = parseFloat(value);
-    if (isNaN(num)) return value;
-    return num.toLocaleString('en-US');
+    // Return raw value for controlled input - don't format with commas
+    // This ensures the cursor stays at the end and editing works smoothly
+    return value;
   };
 
-  // Calculate exchange rate display
   const exchangeRate = useMemo(() => {
     if (transactionCurrency === globalCurrency) return null;
     const rate = convertAmount(1, transactionCurrency, globalCurrency, rates);
@@ -131,187 +179,184 @@ export const TransactionForm = ({
     }
     
     setFormData(initialFormData);
-    setTransactionCurrency(globalCurrency);
-    setShowForm(false);
+    setTransactionCurrency('USD');
+    onClose();
     onTransactionAdded();
   };
 
   const handleCancel = () => {
     if (editingTransaction) {
       onCancelEdit?.();
-    } else {
-      setShowForm(false);
-      setFormData(initialFormData);
-      setTransactionCurrency(globalCurrency);
     }
+    setFormData(initialFormData);
+    setTransactionCurrency('USD');
+    onClose();
   };
 
   const categories = formData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
-  if (!showForm) {
-    return (
-      <button 
-        className="add-transaction-btn"
-        onClick={() => setShowForm(true)}
-      >
-        <PlusCircle size={20} />
-        Add Transaction
-      </button>
-    );
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className="transaction-form-overlay">
-      <div className="transaction-form-container">
-        <h2>{editingTransaction ? 'Edit Transaction' : 'Add Transaction'}</h2>
+    <div className="transaction-form-overlay" onClick={handleCancel}>
+      <div className="transaction-form-container" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close-x" onClick={handleCancel} aria-label="Close">
+          <X size={24} />
+        </button>
+        
+        <div className="form-header">
+          <h2>{editingTransaction ? 'Edit Transaction' : 'Add Transaction'}</h2>
+        </div>
         
         <form onSubmit={handleSubmit} className="transaction-form">
-          <div className="form-group type-selector">
-            <label>Transaction Type</label>
-            <div className="type-buttons">
-              <button
-                type="button"
-                className={`type-btn ${formData.type === 'income' ? 'active' : ''}`}
-                onClick={() => handleTypeChange('income')}
-              >
-                Income
-              </button>
-              <button
-                type="button"
-                className={`type-btn ${formData.type === 'expense' ? 'active' : ''}`}
-                onClick={() => handleTypeChange('expense')}
-              >
-                Expense
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="category">Category</label>
-            <select
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                category: e.target.value as IncomeCategory | ExpenseCategory 
-              }))}
-              required
-            >
-              {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {formData.type === 'expense' && (
-            <>
-              <div className="form-group type-selector">
-                <label>Expense Type</label>
-                <div className="type-buttons">
-                  <button
-                    type="button"
-                    className={`type-btn ${formData.expenseType === 'mandatory' ? 'active' : ''}`}
-                    onClick={() => setFormData(prev => ({ ...prev, expenseType: 'mandatory' }))}
-                  >
-                    Mandatory
-                  </button>
-                  <button
-                    type="button"
-                    className={`type-btn ${formData.expenseType === 'leisure' ? 'active' : ''}`}
-                    onClick={() => setFormData(prev => ({ ...prev, expenseType: 'leisure' }))}
-                  >
-                    Leisure
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.isRecurring}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isRecurring: e.target.checked }))}
-                  />
-                  <span>Recurring</span>
-                </label>
-              </div>
-            </>
-          )}
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="amount">Amount</label>
-              <div className="amount-input-wrapper">
-                <input
-                  type="text"
-                  id="amount"
-                  value={displayAmount(formData.amount)}
-                  onChange={handleAmountChange}
-                  placeholder="0.00"
-                  className="amount-input"
-                  required
-                />
-                <span className="amount-currency">{CURRENCIES[transactionCurrency].symbol}</span>
+          <div className="form-scroll-content">
+            <div className="form-group type-selector">
+              <label>Transaction Type</label>
+              <div className="type-buttons">
+                <button
+                  type="button"
+                  className={`type-btn ${formData.type === 'income' ? 'active' : ''}`}
+                  onClick={() => handleTypeChange('income')}
+                >
+                  Income
+                </button>
+                <button
+                  type="button"
+                  className={`type-btn ${formData.type === 'expense' ? 'active' : ''}`}
+                  onClick={() => handleTypeChange('expense')}
+                >
+                  Expense
+                </button>
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input
-                type="date"
-                id="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="form-group currency-group">
-              <label htmlFor="currency">Currency</label>
+              <label htmlFor="category">Category</label>
               <select
-                id="currency"
-                value={transactionCurrency}
-                onChange={(e) => setTransactionCurrency(e.target.value as CurrencyCode)}
-                className="currency-select"
+                id="category"
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  category: e.target.value as IncomeCategory | ExpenseCategory 
+                }))}
+                required
               >
-                {Object.values(CURRENCIES).map((curr) => (
-                  <option key={curr.code} value={curr.code}>
-                    {curr.code} ({curr.symbol})
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
                   </option>
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Exchange Rate Info */}
-          {exchangeRate && convertedAmount && (
-            <div className="exchange-rate-info">
-              <div className="rate-display">
-                <ArrowRightLeft size={14} className="rate-icon" />
-                <span className="rate-text">
-                  1 {transactionCurrency} = {exchangeRate.toFixed(4)} {globalCurrency}
-                </span>
+            {formData.type === 'expense' && (
+              <>
+                <div className="form-group type-selector">
+                  <label>Expense Type</label>
+                  <div className="type-buttons">
+                    <button
+                      type="button"
+                      className={`type-btn ${formData.expenseType === 'mandatory' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, expenseType: 'mandatory' }))}
+                    >
+                      Mandatory
+                    </button>
+                    <button
+                      type="button"
+                      className={`type-btn ${formData.expenseType === 'leisure' ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, expenseType: 'leisure' }))}
+                    >
+                      Leisure
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group checkbox-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.isRecurring}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isRecurring: e.target.checked }))}
+                    />
+                    <span>Recurring</span>
+                  </label>
+                </div>
+              </>
+            )}
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="amount">Amount</label>
+                <div className="amount-input-wrapper">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    id="amount"
+                    value={displayAmount(formData.amount)}
+                    onChange={handleAmountChange}
+                    placeholder="0.00"
+                    className="amount-input"
+                    required
+                  />
+                  <span className="amount-currency">{CURRENCIES[transactionCurrency].symbol}</span>
+                </div>
               </div>
-              <div className="converted-amount">
-                <span>≈ {formatCurrency(convertedAmount, globalCurrency)}</span>
+
+              <div className="form-group">
+                <label htmlFor="date">Date</label>
+                <input
+                  type="date"
+                  id="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group currency-group">
+                <label htmlFor="currency">Currency</label>
+                <select
+                  id="currency"
+                  value={transactionCurrency}
+                  onChange={(e) => setTransactionCurrency(e.target.value as CurrencyCode)}
+                  className="currency-select"
+                >
+                  {Object.values(CURRENCIES).map((curr) => (
+                    <option key={curr.code} value={curr.code}>
+                      {curr.code} ({curr.symbol})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          )}
 
-          <div className="form-group">
-            <label htmlFor="notes">Notes (Optional)</label>
-            <textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Add any additional details..."
-              rows={3}
-            />
+            {exchangeRate && convertedAmount && (
+              <div className="exchange-rate-info">
+                <div className="rate-display">
+                  <ArrowRightLeft size={14} className="rate-icon" />
+                  <span className="rate-text">
+                    1 {transactionCurrency} = {exchangeRate.toFixed(4)} {globalCurrency}
+                  </span>
+                </div>
+                <div className="converted-amount">
+                  <span>≈ {formatCurrency(convertedAmount, globalCurrency)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="notes">Notes (Optional)</label>
+              <textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Add any additional details..."
+                rows={2}
+              />
+            </div>
           </div>
 
-          <div className="form-actions">
+          <div className="form-actions-fixed">
             <button 
               type="button" 
               className="cancel-btn"
@@ -323,7 +368,7 @@ export const TransactionForm = ({
               type="submit" 
               className="submit-btn"
             >
-              {editingTransaction ? 'Update Transaction' : 'Save Transaction'}
+              {editingTransaction ? 'Update' : 'Save'}
             </button>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, AlertCircle, ShoppingBag, Briefcase } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, getDay, isToday } from 'date-fns';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { format, addMonths, subMonths, startOfMonth, getDay, isToday, isSameMonth, isSameDay } from 'date-fns';
 import { storageService } from '@/services/storage';
 import { generateCalendarDays } from '@/utils/calculations';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -15,6 +15,7 @@ export const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
 
@@ -27,7 +28,6 @@ export const Calendar = () => {
     loadTransactions();
   }, []);
 
-  // Calculate stats with currency conversion
   const stats = useMemo(() => {
     const convertedIncome = calculateTotalInCurrency(
       transactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
@@ -47,13 +47,11 @@ export const Calendar = () => {
       rates
     );
     
-    const daysInMonth = currentDate.getDate();
-    
     return {
       totalIncome: convertedIncome,
       totalExpense: convertedExpense,
       moneySaved: convertedIncome - convertedExpense,
-      dailyBudget: Math.max(0, daysInMonth > 0 ? (convertedIncome - convertedMandatory) / (new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()) : 0)
+      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / (new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()))
     };
   }, [transactions, currency, rates, currentDate]);
 
@@ -63,7 +61,7 @@ export const Calendar = () => {
     transactions
   );
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const startDay = getDay(startOfMonth(currentDate));
   const emptyDays = Array(startDay).fill(null);
@@ -72,228 +70,205 @@ export const Calendar = () => {
   const handleNextMonth = () => setCurrentDate(prev => addMonths(prev, 1));
 
   const selectedDayStats = selectedDay 
-    ? calendarDays.find(d => d.date.toDateString() === selectedDay.toDateString())?.stats
+    ? calendarDays.find(d => isSameDay(d.date, selectedDay))?.stats
     : null;
 
-  // Calculate spending intensity for each day (0-100%)
-  const getSpendingLevel = (expense: number, budget: number): number => {
-    if (expense === 0 || budget === 0) return 0;
-    const level = (expense / budget) * 100;
-    return Math.min(level, 100);
+  const getDayStatus = (day: typeof calendarDays[0]) => {
+    if (!day.stats || day.stats.transactions.length === 0) return null;
+    
+    const expense = convertAmount(day.stats.expense, 'USD', currency, rates);
+    const income = convertAmount(day.stats.income, 'USD', currency, rates);
+    
+    if (expense > stats.dailyBudget) return 'over-budget';
+    if (income > expense) return 'profit';
+    if (expense > 0) return 'expense';
+    if (income > 0) return 'income';
+    return null;
   };
 
   return (
     <div className="calendar-page">
+      {/* Header */}
       <header className="calendar-header">
-        <div className="calendar-title">
-          <h1>Calendar</h1>
-          <div className="month-navigation">
-            <button onClick={handlePrevMonth} className="nav-btn">
-              <ChevronLeft size={20} />
+        <div className="calendar-title-section">
+          <span className="calendar-label">Calendar</span>
+          <div className="month-nav">
+            <button 
+              className="nav-arrow"
+              onClick={handlePrevMonth}
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={24} />
             </button>
-            <span className="current-month">
-              {format(currentDate, 'MMMM yyyy')}
+            <span className="month-year">
+              {format(currentDate, 'MMM yyyy')}
             </span>
-            <button onClick={handleNextMonth} className="nav-btn">
-              <ChevronRight size={20} />
+            <button 
+              className="nav-arrow"
+              onClick={handleNextMonth}
+              aria-label="Next month"
+            >
+              <ChevronRight size={24} />
             </button>
           </div>
         </div>
-        <div className="calendar-summary">
-          <div className="summary-item">
-            <span className="summary-label">Daily Budget</span>
-            <span className="summary-value budget">{formatCurrency(stats.dailyBudget, currency)}</span>
-          </div>
-          <TransactionForm onTransactionAdded={loadTransactions} />
-        </div>
+        <button 
+          className="add-btn"
+          onClick={() => setFormOpen(true)}
+          aria-label="Add transaction"
+        >
+          <Plus size={20} />
+        </button>
       </header>
 
-      <div className="calendar-content">
-        <div className="calendar-grid-container">
-          <div className="weekday-headers">
-            {weekDays.map(day => (
-              <div key={day} className="weekday-header">{day}</div>
-            ))}
-          </div>
-          
-          <div className="calendar-grid">
-            {emptyDays.map((_, index) => (
-              <div key={`empty-${index}`} className="calendar-day empty" />
-            ))}
-            
-            {calendarDays.map((day) => {
-              const dayStats = day.stats;
-              const incomeAmount = dayStats ? convertAmount(
-                dayStats.income,
-                'USD',
-                currency,
-                rates
-              ) : 0;
-              const expenseAmount = dayStats ? convertAmount(
-                dayStats.expense,
-                'USD',
-                currency,
-                rates
-              ) : 0;
-              const moneySaved = incomeAmount - expenseAmount;
-              const spendingLevel = getSpendingLevel(expenseAmount, stats.dailyBudget);
-              const isOverBudget = expenseAmount > stats.dailyBudget;
-              const isProfit = moneySaved > 0;
-              const isSelected = selectedDay?.toDateString() === day.date.toDateString();
-              const isTodayDate = isToday(day.date);
-              
-              return (
-                <div
-                  key={day.date.toISOString()}
-                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isOverBudget ? 'over-budget' : ''} ${isTodayDate ? 'today' : ''} ${expenseAmount > 0 ? 'has-spending' : ''} ${isProfit ? 'profit-day' : ''}`}
-                  style={{ '--spending-level': `${spendingLevel}%` } as React.CSSProperties}
-                  onClick={() => setSelectedDay(day.date)}
-                >
-                  <span className="day-number">{format(day.date, 'd')}</span>
-                  
-                  <div className="day-budget-info">
-                    <span className="daily-budget-label">{formatCurrency(stats.dailyBudget, currency)}</span>
-                  </div>
-                  
-                  {day.stats && day.stats.transactions.length > 0 && (
-                    <div className="day-stats">
-                      {day.stats.income > 0 && (
-                        <span className="day-income">+{formatCurrency(day.stats.income, currency)}</span>
-                      )}
-                      {day.stats.expense > 0 && (
-                        <span className="day-expense">
-                          -{formatCurrency(day.stats.expense, currency)}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="day-status-indicators">
-                    {isOverBudget ? (
-                      <div className="status-badge over-budget-badge">
-                        <AlertCircle size={10} />
-                        <span>Over Budget</span>
-                      </div>
-                    ) : isProfit ? (
-                      <div className="status-badge profit-badge">
-                        <span className="profit-dot" />
-                        <span>Money Saved</span>
-                      </div>
-                    ) : null}
-                  </div>
-                  
-                  {day.stats && day.stats.transactions.length > 0 && (
-                    <div className="day-indicators">
-                      {day.stats.mandatoryExpense > 0 && (
-                        <span className="indicator mandatory" title="Mandatory expense" />
-                      )}
-                      {day.stats.leisureExpense > 0 && (
-                        <span className="indicator leisure" title="Leisure expense" />
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+      {/* Calendar Grid */}
+      <div className="calendar-wrapper">
+        {/* Weekday Headers */}
+        <div className="weekday-row">
+          {weekDays.map(day => (
+            <div key={day} className="weekday-cell">{day}</div>
+          ))}
         </div>
-
-        <div className="day-details">
-          <div className="section-header">
-            <h2>
-              {selectedDay 
-                ? format(selectedDay, 'EEEE, MMMM do') 
-                : 'Select a day'}
-            </h2>
-            <p>{selectedDay ? 'Daily transactions' : 'Click a calendar day to view details'}</p>
-          </div>
-
-          {selectedDayStats && selectedDayStats.transactions.length > 0 ? (
-            <div className="day-transactions">
-              <div className="day-summary-bar">
-                <div className="summary-stat">
-                  <span className="label">Income</span>
-                  <span className="value income">+{formatCurrency(selectedDayStats.income, currency)}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="label">Expense</span>
-                  <span className="value expense">-{formatCurrency(selectedDayStats.expense, currency)}</span>
-                </div>
-                <div className="summary-stat">
-                  <span className="label">Net</span>
-                  <span className={`value ${selectedDayStats.income - selectedDayStats.expense >= 0 ? 'income' : 'expense'}`}>
-                    {selectedDayStats.income - selectedDayStats.expense >= 0 ? '+' : ''}
-                    {formatCurrency(selectedDayStats.income - selectedDayStats.expense, currency)}
-                  </span>
-                </div>
-                {selectedDayStats.expense > stats.dailyBudget && (
-                  <div className="budget-alert">
-                    <AlertCircle size={14} />
-                    Exceeded budget by {formatCurrency(selectedDayStats.expense - stats.dailyBudget, currency)}
+        
+        {/* Days Grid */}
+        <div className="days-grid">
+          {emptyDays.map((_, index) => (
+            <div key={`empty-${index}`} className="day-cell empty" />
+          ))}
+          
+          {calendarDays.map((day) => {
+            const isSelected = selectedDay && isSameDay(day.date, selectedDay);
+            const isTodayDate = isToday(day.date);
+            const isCurrentMonth = isSameMonth(day.date, currentDate);
+            const status = getDayStatus(day);
+            const hasTransactions = day.stats && day.stats.transactions.length > 0;
+            
+            return (
+              <button
+                key={day.date.toISOString()}
+                className={`day-cell ${isSelected ? 'selected' : ''} ${isTodayDate ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
+                onClick={() => setSelectedDay(day.date)}
+                aria-label={format(day.date, 'MMMM do')}
+                aria-pressed={isSelected}
+              >
+                <span className="day-number">{format(day.date, 'd')}</span>
+                
+                {hasTransactions && (
+                  <div className="day-dots">
+                    {status === 'over-budget' && (
+                      <span className="dot over-budget-dot" />
+                    )}
+                    {status === 'profit' && (
+                      <span className="dot profit-dot" />
+                    )}
+                    {(status === 'expense' || status === 'income') && (
+                      <span className="dot expense-dot" />
+                    )}
                   </div>
                 )}
-              </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-              <div className="transactions-list">
-                {selectedDayStats.transactions.map(transaction => (
-                  <div 
-                    key={transaction.id} 
-                    className={`day-transaction-item ${transaction.type}`}
-                  >
-                    <div className="transaction-icon">
-                      {transaction.type === 'income' ? (
-                        <Briefcase size={18} />
-                      ) : (
-                        <ShoppingBag size={18} />
-                      )}
+      {/* Daily Budget Info */}
+      <div className="budget-info-bar">
+        <span className="budget-label">Daily Budget</span>
+        <span className="budget-value">{formatCurrency(stats.dailyBudget, currency)}</span>
+      </div>
+
+      {/* Selected Day Details */}
+      {selectedDay && (
+        <>
+          <div className="day-detail-backdrop" onClick={() => setSelectedDay(null)} />
+          <div className="day-detail-panel">
+            {/* Budget Status Header */}
+            <div className={`budget-status-header ${
+              !selectedDayStats || selectedDayStats.transactions.length === 0 
+                ? 'neutral' 
+                : selectedDayStats.expense > stats.dailyBudget 
+                  ? 'over-budget' 
+                  : 'under-budget'
+            }`}>
+              <div className="budget-status-content">
+                <div className="budget-status-label">
+                  {!selectedDayStats || selectedDayStats.transactions.length === 0 
+                    ? 'No Activity' 
+                    : selectedDayStats.expense > stats.dailyBudget 
+                      ? 'Over Budget' 
+                      : 'Money Saved'}
+                </div>
+                <div className="budget-status-amount">
+                  {!selectedDayStats || selectedDayStats.transactions.length === 0 
+                    ? formatCurrency(0, currency)
+                    : selectedDayStats.expense > stats.dailyBudget 
+                      ? formatCurrency(convertAmount(selectedDayStats.expense, 'USD', currency, rates) - stats.dailyBudget, currency)
+                      : formatCurrency(stats.dailyBudget - convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)}
+                </div>
+              </div>
+            </div>
+
+            <div className="detail-header">
+              <span className="detail-date">{format(selectedDay, 'EEEE, MMMM do')}</span>
+              <button 
+                className="close-detail"
+                onClick={() => setSelectedDay(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Daily Budget Summary */}
+            <div className="daily-budget-summary">
+              <div className="budget-summary-item">
+                <span className="budget-summary-label">Daily Budget</span>
+                <span className="budget-summary-value">{formatCurrency(stats.dailyBudget, currency)}</span>
+              </div>
+              <div className="budget-summary-item">
+                <span className="budget-summary-label">Total Spent</span>
+                <span className="budget-summary-value spent">
+                  {selectedDayStats 
+                    ? formatCurrency(convertAmount(selectedDayStats.expense, 'USD', currency, rates), currency)
+                    : formatCurrency(0, currency)}
+                </span>
+              </div>
+            </div>
+            
+            {selectedDayStats && selectedDayStats.transactions.length > 0 ? (
+              <div className="detail-transactions">
+                {selectedDayStats.transactions.map(t => (
+                  <div key={t.id} className={`detail-item ${t.type}`}>
+                    <div className="detail-left">
+                      <span className="detail-category">{t.category}</span>
+                      {t.notes && <span className="detail-notes">{t.notes}</span>}
                     </div>
-                    <div className="transaction-details">
-                      <span className="transaction-category">{transaction.category}</span>
-                      {transaction.notes && (
-                        <span className="transaction-notes">{transaction.notes}</span>
-                      )}
-                      {transaction.expenseType && (
-                        <span className={`transaction-type ${transaction.expenseType}`}>
-                          {transaction.expenseType}
-                          {transaction.isRecurring && ' • Recurring'}
-                        </span>
-                      )}
-                    </div>
-                    <span className={`transaction-amount ${transaction.type}`}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount, currency)}
+                    <span className={`detail-amount ${t.type}`}>
+                      {t.type === 'income' ? '+' : '-'}
+                      {formatCurrency(convertAmount(t.amount, (t.currency || 'USD') as CurrencyCode, currency, rates), currency)}
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
-          ) : selectedDay ? (
-            <div className="empty-state">
-              <p>No transactions on this day</p>
-              <span>Add a transaction to track your spending</span>
-            </div>
-          ) : (
-            <div className="empty-state">
-              <p>Select a day to view transactions</p>
-            </div>
-          )}
-
-          <div className="legend">
-            <div className="legend-item">
-              <span className="legend-indicator mandatory" />
-              <span>Mandatory Expense</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-indicator leisure" />
-              <span>Leisure Expense</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-indicator over-budget" />
-              <span>Over Budget</span>
-            </div>
+            ) : (
+              <div className="detail-empty">
+                <p>No transactions for this day</p>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </>
+      )}
+
+      {/* Add Transaction Modal */}
+      <TransactionForm
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        onTransactionAdded={() => {
+          loadTransactions();
+          setFormOpen(false);
+        }}
+      />
     </div>
   );
 };

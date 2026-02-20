@@ -149,3 +149,67 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .confirm-modal-overlay {
+    padding: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .confirm-modal-container {
+    max-width: 100%;
+    padding: 1.5rem;
+    border-radius: 1rem 1rem 0 0;
+    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes slideUpMobile {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .confirm-modal-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 1rem;
+  }
+
+  .confirm-modal-title {
+    font-size: 1.125rem;
+  }
+
+  .confirm-modal-message {
+    font-size: 0.875rem;
+  }
+
+  .confirm-modal-actions .cancel-btn,
+  .confirm-modal-actions .confirm-btn {
+    padding: 1rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+}
+
+/* Touch device - remove hover effects */
+@media (hover: none) {
+  .modal-close-btn:hover,
+  .cancel-btn:hover,
+  .confirm-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .modal-close-btn:active,
+  .cancel-btn:active,
+  .confirm-btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
