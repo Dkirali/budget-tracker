@@ -74,16 +74,16 @@ export const Calendar = () => {
     : null;
 
   const getDayStatus = (day: typeof calendarDays[0]) => {
-    if (!day.stats || day.stats.transactions.length === 0) return null;
+    if (!day.stats || day.stats.transactions.length === 0) return 'no-activity';
     
     const expense = convertAmount(day.stats.expense, 'USD', currency, rates);
     const income = convertAmount(day.stats.income, 'USD', currency, rates);
     
     if (expense > stats.dailyBudget) return 'over-budget';
-    if (income > expense) return 'profit';
-    if (expense > 0) return 'expense';
-    if (income > 0) return 'income';
-    return null;
+    if (income > expense) return 'within-budget';
+    if (expense > 0) return 'within-budget';
+    if (income > 0) return 'within-budget';
+    return 'no-activity';
   };
 
   return (
@@ -141,7 +141,6 @@ export const Calendar = () => {
             const isTodayDate = isToday(day.date);
             const isCurrentMonth = isSameMonth(day.date, currentDate);
             const status = getDayStatus(day);
-            const hasTransactions = day.stats && day.stats.transactions.length > 0;
             
             return (
               <button
@@ -151,21 +150,9 @@ export const Calendar = () => {
                 aria-label={format(day.date, 'MMMM do')}
                 aria-pressed={!!isSelected}
               >
-                <span className="day-number">{format(day.date, 'd')}</span>
-                
-                {hasTransactions && (
-                  <div className="day-dots">
-                    {status === 'over-budget' && (
-                      <span className="dot over-budget-dot" />
-                    )}
-                    {status === 'profit' && (
-                      <span className="dot profit-dot" />
-                    )}
-                    {(status === 'expense' || status === 'income') && (
-                      <span className="dot expense-dot" />
-                    )}
-                  </div>
-                )}
+                <div className={`date-badge ${status}`}>
+                  <span className="day-number">{format(day.date, 'd')}</span>
+                </div>
               </button>
             );
           })}
@@ -236,26 +223,29 @@ export const Calendar = () => {
               </div>
             </div>
             
-            {selectedDayStats && selectedDayStats.transactions.length > 0 ? (
-              <div className="detail-transactions">
-                {selectedDayStats.transactions.map(t => (
-                  <div key={t.id} className={`detail-item ${t.type}`}>
-                    <div className="detail-left">
-                      <span className="detail-category">{t.category}</span>
-                      {t.notes && <span className="detail-notes">{t.notes}</span>}
+            {/* Shared Scroll Container for both populated and empty states */}
+            <div className="detail-content-scroll">
+              {selectedDayStats && selectedDayStats.transactions.length > 0 ? (
+                <div className="detail-transactions">
+                  {selectedDayStats.transactions.map(t => (
+                    <div key={t.id} className={`detail-item ${t.type}`}>
+                      <div className="detail-left">
+                        <span className="detail-category">{t.category}</span>
+                        {t.notes && <span className="detail-notes">{t.notes}</span>}
+                      </div>
+                      <span className={`detail-amount ${t.type}`}>
+                        {t.type === 'income' ? '+' : '-'}
+                        {formatCurrency(convertAmount(t.amount, (t.currency || 'USD') as CurrencyCode, currency, rates), currency)}
+                      </span>
                     </div>
-                    <span className={`detail-amount ${t.type}`}>
-                      {t.type === 'income' ? '+' : '-'}
-                      {formatCurrency(convertAmount(t.amount, (t.currency || 'USD') as CurrencyCode, currency, rates), currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="detail-empty">
-                <p>No transactions for this day</p>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="detail-empty">
+                  <p>No transactions for this day</p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

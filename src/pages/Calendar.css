@@ -123,12 +123,10 @@
 .day-cell {
   aspect-ratio: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0.25rem;
   border: none;
-  border-radius: 50%;
   background: transparent;
   cursor: pointer;
   position: relative;
@@ -167,40 +165,40 @@
   color: white;
 }
 
+/* Date Badge - Fixed size circle container */
+.date-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.date-badge.no-activity {
+  background: transparent;
+}
+
+.date-badge.over-budget {
+  background: var(--color-accent-red);
+}
+
+.date-badge.within-budget {
+  background: var(--color-accent-green);
+}
+
+.date-badge.over-budget .day-number,
+.date-badge.within-budget .day-number {
+  color: white;
+  font-weight: 600;
+}
+
 .day-number {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-text-primary);
   line-height: 1;
-}
-
-/* Day Dots */
-.day-dots {
-  display: flex;
-  gap: 0.125rem;
-  margin-top: 0.25rem;
-  height: 6px;
-  align-items: center;
-  justify-content: center;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dot.over-budget-dot {
-  background: var(--color-accent-red);
-}
-
-.dot.profit-dot {
-  background: var(--color-accent-green);
-}
-
-.dot.expense-dot {
-  background: var(--color-accent-blue);
 }
 
 /* Budget Info Bar */
@@ -260,9 +258,8 @@
   flex-direction: column;
   z-index: 100;
   animation: slideUp 0.3s ease-out;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  /* Scroll handled by inner .detail-content-scroll */
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -378,11 +375,11 @@
   background: var(--color-bg-hover);
 }
 
-/* Daily Budget Summary */
+/* Daily Budget Summary - Aligned row layout */
 .daily-budget-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 1rem 1.25rem;
   background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
@@ -390,8 +387,8 @@
 
 .budget-summary-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .budget-summary-label {
@@ -412,10 +409,19 @@
   color: var(--color-accent-red);
 }
 
+/* Scrollable Content Container - Shared wrapper for both states */
+.detail-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Bottom padding: BottomNav height (64px) + safe area + buffer (24px) */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 24px);
+}
+
 /* Detail Transactions */
 .detail-transactions {
-  flex: 1;
-  padding: 0.5rem 0;
+  /* No vertical padding - scroll container handles spacing */
+  /* Horizontal padding handled by detail-item */
 }
 
 .detail-item {
@@ -468,8 +474,13 @@
   color: var(--color-accent-red);
 }
 
-/* Empty State */
+/* Empty State - Vertically centered within scroll container */
 .detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
   padding: 2.5rem 1.25rem;
   text-align: center;
   color: var(--color-text-muted);
@@ -514,17 +525,13 @@
     min-width: 60px;
   }
   
+  .date-badge {
+    width: 40px;
+    height: 40px;
+  }
+  
   .day-number {
     font-size: 1rem;
-  }
-  
-  .day-dots {
-    margin-top: 0.375rem;
-  }
-  
-  .dot {
-    width: 8px;
-    height: 8px;
   }
   
   .budget-info-bar {
@@ -535,6 +542,17 @@
   
   .budget-value {
     font-size: 1.25rem;
+  }
+  
+  /* Desktop budget summary - side by side with consistent alignment */
+  .daily-budget-summary {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+  
+  .budget-summary-item {
+    flex: 1;
   }
   
   /* Desktop detail panel - side panel instead of bottom sheet */
@@ -595,13 +613,13 @@
     min-width: 40px;
   }
   
-  .day-number {
-    font-size: 0.875rem;
+  .date-badge {
+    width: 28px;
+    height: 28px;
   }
   
-  .dot {
-    width: 5px;
-    height: 5px;
+  .day-number {
+    font-size: 0.875rem;
   }
   
   .month-year {
