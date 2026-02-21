@@ -265,11 +265,10 @@ export const Calendar = () => {
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
         onTransactionAdded={(transaction) => {
-          // Optimistically add to local state
+          // Optimistic update - sadece local state güncelle
           setTransactions(prev => [transaction, ...prev]);
           setFormOpen(false);
-          // Sync with server in background
-          loadTransactions();
+          // NOT: loadTransactions() çağırmıyoruz - flicker'ı önlemek için
         }}
       />
     </div>

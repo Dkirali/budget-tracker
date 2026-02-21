@@ -250,41 +250,25 @@ export const TransactionForm = ({
             </div>
 
             {formData.type === 'expense' && (
-              <>
-                <div className="form-group type-selector">
-                  <label>Expense Type</label>
-                  <div className="type-buttons">
-                    <button
-                      type="button"
-                      className={`type-btn ${formData.expenseType === 'mandatory' ? 'active' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, expenseType: 'mandatory' }))}
-                    >
-                      Mandatory
-                    </button>
-                    <button
-                      type="button"
-                      className={`type-btn ${formData.expenseType === 'leisure' ? 'active' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, expenseType: 'leisure' }))}
-                    >
-                      Leisure
-                    </button>
-                  </div>
+              <div className="form-group type-selector">
+                <label>Expense Type</label>
+                <div className="type-buttons">
+                  <button
+                    type="button"
+                    className={`type-btn ${formData.expenseType === 'mandatory' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, expenseType: 'mandatory' }))}
+                  >
+                    Mandatory
+                  </button>
+                  <button
+                    type="button"
+                    className={`type-btn ${formData.expenseType === 'leisure' ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, expenseType: 'leisure' }))}
+                  >
+                    Leisure
+                  </button>
                 </div>
-
-                <div className="form-group">
-                  <div className="recurring-toggle">
-                    <input
-                      type="checkbox"
-                      id="recurring-checkbox"
-                      checked={formData.isRecurring}
-                      onChange={(e) => setFormData(prev => ({ ...prev, isRecurring: e.target.checked }))}
-                    />
-                    <label htmlFor="recurring-checkbox">
-                      Recurring
-                    </label>
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
             <div className="form-row">
@@ -331,6 +315,28 @@ export const TransactionForm = ({
                   ))}
                 </select>
               </div>
+
+              {formData.type === 'expense' && (
+                <div className="form-group recurring-group">
+                  <label>Recurring</label>
+                  <div className="yes-no-toggle">
+                    <button
+                      type="button"
+                      className={`toggle-btn ${!formData.isRecurring ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, isRecurring: false }))}
+                    >
+                      No
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-btn ${formData.isRecurring ? 'active' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, isRecurring: true }))}
+                    >
+                      Yes
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {exchangeRate && convertedAmount && (

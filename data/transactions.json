@@ -12,17 +12,6 @@
         "isRecurring": true
       },
       {
-        "id": "1771625033905-xg3q5m4sf",
-        "type": "expense",
-        "category": "business",
-        "amount": 11000,
-        "date": "2026-02-03",
-        "notes": "Mali Musavir",
-        "currency": "TRY",
-        "expenseType": "mandatory",
-        "isRecurring": false
-      },
-      {
         "id": "1771625077929-m72tby8x6",
         "type": "expense",
         "category": "business",
@@ -32,6 +21,16 @@
         "currency": "TRY",
         "expenseType": "mandatory",
         "isRecurring": false
+      },
+      {
+        "id": "1771631829596-19q7wr7g1",
+        "type": "expense",
+        "category": "food",
+        "amount": 2000,
+        "date": "2026-02-20",
+        "currency": "EUR",
+        "expenseType": "leisure",
+        "isRecurring": true
       }
     ]
   }

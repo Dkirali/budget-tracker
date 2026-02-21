@@ -37,10 +37,12 @@ export const Transactions = () => {
 
   const handleConfirmDelete = async () => {
     if (transactionToDelete) {
-      await storageService.deleteTransaction(transactionToDelete);
-      await loadTransactions();
+      // Optimistic delete - UI'dan hemen kaldır
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
       setDeleteModalOpen(false);
       setTransactionToDelete(null);
+      // Server'dan sil (background'da)
+      await storageService.deleteTransaction(transactionToDelete);
     }
   };
 
@@ -224,11 +226,10 @@ export const Transactions = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onTransactionAdded={(transaction) => {
-          // Optimistically add to local state
+          // Optimistic update - sadece local state güncelle
           setTransactions(prev => [transaction, ...prev]);
           setShowAddModal(false);
-          // Sync with server in background
-          loadTransactions();
+          // NOT: loadTransactions() çağırmıyoruz - flicker'ı önlemek için
         }}
       />
 
@@ -237,11 +238,10 @@ export const Transactions = () => {
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
         onTransactionAdded={(transaction) => {
-          // Optimistically update local state
+          // Optimistic update - sadece local state güncelle
           setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
           handleCloseEditModal();
-          // Sync with server in background
-          loadTransactions();
+          // NOT: loadTransactions() çağırmıyoruz
         }}
         editingTransaction={editingTransaction}
         onCancelEdit={handleCloseEditModal}

@@ -52,10 +52,12 @@ export const Dashboard = () => {
 
   const handleConfirmDelete = async () => {
     if (transactionToDelete) {
-      await storageService.deleteTransaction(transactionToDelete);
-      await loadTransactions();
+      // Optimistic delete - UI'dan hemen kaldır
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
       setDeleteModalOpen(false);
       setTransactionToDelete(null);
+      // Server'dan sil (background'da)
+      await storageService.deleteTransaction(transactionToDelete);
     }
   };
 
@@ -371,11 +373,10 @@ export const Dashboard = () => {
         isOpen={formOpen && !editingTransaction}
         onClose={() => setFormOpen(false)}
         onTransactionAdded={(transaction: Transaction) => {
-          // Optimistically add to local state immediately
+          // Optimistic update - sadece local state güncelle, server'a güven
           setTransactions(prev => [transaction, ...prev]);
           setFormOpen(false);
-          // Then sync with server in background
-          loadTransactions();
+          // NOT: loadTransactions() çağırmıyoruz - bu flicker'a sebep oluyordu
         }}
       />
 
@@ -384,11 +385,10 @@ export const Dashboard = () => {
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
         onTransactionAdded={(transaction: Transaction) => {
-          // Optimistically update local state immediately
+          // Optimistic update - sadece local state güncelle
           setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
           handleCloseEditModal();
-          // Then sync with server in background
-          loadTransactions();
+          // NOT: loadTransactions() çağırmıyoruz
         }}
         editingTransaction={editingTransaction}
         onCancelEdit={handleCloseEditModal}
