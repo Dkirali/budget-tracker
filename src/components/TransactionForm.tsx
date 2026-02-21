@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ArrowRightLeft, X, Loader2 } from 'lucide-react';
+import { Dropdown } from '@/components/Dropdown';
 import type { 
   TransactionType, 
   TransactionFormData, 
@@ -231,22 +232,17 @@ export const TransactionForm = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="category">Category</label>
-              <select
+              <Dropdown
                 id="category"
+                label="Category"
+                options={categories.map(cat => ({ value: cat.value, label: cat.label }))}
                 value={formData.category}
-                onChange={(e) => setFormData(prev => ({ 
+                onChange={(value) => setFormData(prev => ({ 
                   ...prev, 
-                  category: e.target.value as IncomeCategory | ExpenseCategory 
+                  category: value as IncomeCategory | ExpenseCategory 
                 }))}
                 required
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {formData.type === 'expense' && (
@@ -301,19 +297,16 @@ export const TransactionForm = ({
               </div>
 
               <div className="form-group currency-group">
-                <label htmlFor="currency">Currency</label>
-                <select
+                <Dropdown
                   id="currency"
+                  label="Currency"
+                  options={Object.values(CURRENCIES).map((curr) => ({
+                    value: curr.code,
+                    label: `${curr.code} (${curr.symbol})`,
+                  }))}
                   value={transactionCurrency}
-                  onChange={(e) => setTransactionCurrency(e.target.value as CurrencyCode)}
-                  className="currency-select"
-                >
-                  {Object.values(CURRENCIES).map((curr) => (
-                    <option key={curr.code} value={curr.code}>
-                      {curr.code} ({curr.symbol})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setTransactionCurrency(value as CurrencyCode)}
+                />
               </div>
 
               {formData.type === 'expense' && (
