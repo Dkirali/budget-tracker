@@ -1,11 +1,20 @@
 import { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { TrendingUp, TrendingDown, RefreshCw, AlertCircle } from 'lucide-react';
 import { useExchangeRates } from '@/context/useExchangeRates';
+import { useAuth } from '@/context/AuthContext';
 import { type CurrencyCode } from '@/types/currency';
 import './ExchangeRateTicker.css';
 
 export const ExchangeRateTicker = () => {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const { rates, isLoading, error, timeSinceUpdate } = useExchangeRates();
+
+  // Don't show on login page
+  if (!isAuthenticated || location.pathname === '/login') {
+    return null;
+  }
 
   const formatTimeSince = (seconds: number | null): string => {
     if (seconds === null) return 'Never';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -7,15 +7,15 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Pencil,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { 
   PieChart, 
   Pie, 
   Cell, 
   Tooltip, 
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { TransactionForm } from '@/components/TransactionForm';
@@ -24,58 +24,86 @@ import { storageService } from '@/services/storage';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { useCurrency } from '@/context/useCurrency';
 import { useExchangeRates } from '@/context/useExchangeRates';
+import { useSettings } from '@/context/SettingsContext';
 import { convertAmount, calculateTotalInCurrency } from '@/utils/conversions';
 import type { Transaction, CurrencyCode } from '@/types';
 import './Dashboard.css';
 
 export const Dashboard = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentDate] = useState(new Date());
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedPieSlice, setSelectedPieSlice] = useState<{name: string; value: number; color: string; percent: number} | null>(null);
   const { currency } = useCurrency();
   const { rates } = useExchangeRates();
+  const { getActiveCycle } = useSettings();
 
-  const loadTransactions = () => {
-    const data = storageService.getTransactions();
-    setTransactions(data);
-  };
-
-  const handleDeleteClick = (id: string) => {
-    setTransactionToDelete(id);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (transactionToDelete) {
-      storageService.deleteTransaction(transactionToDelete);
-      loadTransactions();
-      setDeleteModalOpen(false);
-      setTransactionToDelete(null);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteModalOpen(false);
-    setTransactionToDelete(null);
-  };
-
-  const handleEditTransaction = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-  };
-
-  const handleCloseEditModal = () => {
-    setEditingTransaction(null);
-  };
-
+  // Initial load - sadece mount'ta çalışır
   useEffect(() => {
-    loadTransactions();
+    const loadInitialData = async () => {
+      const data = await storageService.getTransactions();
+      setTransactions(data);
+    };
+    loadInitialData();
   }, []);
 
-  // Calculate stats with currency conversion
+  const handleDeleteClick = useCallback((id: string) => {
+    setTransactionToDelete(id);
+    setDeleteModalOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (transactionToDelete) {
+      // 1. UI'dan hemen kaldır (optimistic delete)
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
+      // 2. Modal'ı kapat
+      setDeleteModalOpen(false);
+      setTransactionToDelete(null);
+      // 3. Server'dan sil (background'da, async)
+      await storageService.deleteTransaction(transactionToDelete);
+    }
+  }, [transactionToDelete]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteModalOpen(false);
+    setTransactionToDelete(null);
+  }, []);
+
+  const handleEditTransaction = useCallback((transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setFormOpen(true);
+  }, []);
+
+  const handleCloseEditModal = useCallback(() => {
+    setEditingTransaction(null);
+    setFormOpen(false);
+  }, []);
+
+  const handleTransactionSubmit = useCallback((transaction: Transaction) => {
+    // Optimistic update: Direkt state'e ekle/güncelle, server cevabını bekleme
+    setTransactions(prev => {
+      const existingIndex = prev.findIndex(t => t.id === transaction.id);
+      if (existingIndex >= 0) {
+        // Edit: Mevcut transaction'ı güncelle
+        const updated = [...prev];
+        updated[existingIndex] = transaction;
+        return updated;
+      } else {
+        // Add: Yeni transaction'ı başa ekle
+        return [transaction, ...prev];
+      }
+    });
+    // Modal'ı kapat
+    setFormOpen(false);
+    setEditingTransaction(null);
+  }, []);
+
+  const activeCycle = getActiveCycle();
+
+  // Stats hesaplamaları - transactions değiştiğinde otomatik güncellenir
   const stats = useMemo(() => {
-    // Convert all amounts to selected currency
     const convertedIncome = calculateTotalInCurrency(
       transactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
       currency,
@@ -93,16 +121,29 @@ export const Dashboard = () => {
       currency,
       rates
     );
+
+    let daysInCycle = 30;
+    if (activeCycle) {
+      if (activeCycle.startDay <= activeCycle.endDay) {
+        daysInCycle = activeCycle.endDay - activeCycle.startDay + 1;
+      } else {
+        daysInCycle = (31 - activeCycle.startDay + 1) + activeCycle.endDay;
+      }
+    }
+
+    const monthlyBudget = activeCycle?.monthlyBudget || Math.max(0, convertedIncome - convertedMandatory);
     
     return {
       totalIncome: convertedIncome,
       totalExpense: convertedExpense,
       moneySaved: convertedIncome - convertedExpense,
-      dailyBudget: Math.max(0, (convertedIncome - convertedMandatory) / 30)
+      dailyBudget: monthlyBudget / daysInCycle,
+      monthlyBudget,
+      daysInCycle,
+      activeCycleName: activeCycle?.name || 'Monthly'
     };
-  }, [transactions, currency, rates]);
+  }, [transactions, currency, rates, activeCycle]);
 
-  // Calculate spending breakdown by category for pie chart
   const spendingByCategory = useMemo(() => {
     const expenses = transactions.filter(t => t.type === 'expense');
     const categoryTotals: Record<string, number> = {};
@@ -118,7 +159,10 @@ export const Dashboard = () => {
     });
     
     return Object.entries(categoryTotals)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ 
+        name: name.charAt(0).toUpperCase() + name.slice(1), 
+        value 
+      }))
       .sort((a, b) => b.value - a.value);
   }, [transactions, currency, rates]);
 
@@ -137,10 +181,15 @@ export const Dashboard = () => {
           <h1>Dashboard</h1>
           <p className="current-month">
             <Calendar size={14} />
-            {format(currentDate, 'MMMM yyyy')}
+            {stats.activeCycleName}
           </p>
         </div>
-        <TransactionForm onTransactionAdded={loadTransactions} />
+        <button 
+          className="add-transaction-btn desktop-only"
+          onClick={() => setFormOpen(true)}
+        >
+          Add Transaction
+        </button>
       </header>
 
       <div className="stats-grid">
@@ -193,7 +242,10 @@ export const Dashboard = () => {
             <span className="stat-label">Daily Budget</span>
             <span className="stat-value">{formatCurrency(stats.dailyBudget, currency)}</span>
             <span className="stat-trend info">
-              Per day available
+              {activeCycle 
+                ? `Day ${activeCycle.startDay}-${activeCycle.endDay}`
+                : 'Per day available'
+              }
             </span>
           </div>
         </div>
@@ -219,6 +271,17 @@ export const Dashboard = () => {
                     fill="#8884d8"
                     dataKey="value"
                     animationDuration={1000}
+                    onClick={(_, index) => {
+                      const item = spendingByCategory[index];
+                      const total = spendingByCategory.reduce((sum, item) => sum + item.value, 0);
+                      setSelectedPieSlice({
+                        name: item.name,
+                        value: item.value,
+                        color: COLORS[index % COLORS.length],
+                        percent: (item.value / total) * 100
+                      });
+                    }}
+                    style={{ cursor: 'pointer' }}
                   >
                     {spendingByCategory.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -233,11 +296,6 @@ export const Dashboard = () => {
                       boxShadow: 'var(--shadow-lg)',
                       color: 'var(--color-text-primary)'
                     }}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value) => <span style={{ color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>{value}</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -326,16 +384,13 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Edit Transaction Modal */}
-      {editingTransaction && (
-        <TransactionForm
-          onTransactionAdded={loadTransactions}
-          editingTransaction={editingTransaction}
-          onCancelEdit={handleCloseEditModal}
-        />
-      )}
+      <TransactionForm
+        isOpen={formOpen}
+        onClose={handleCloseEditModal}
+        onSubmit={handleTransactionSubmit}
+        editingTransaction={editingTransaction}
+      />
 
-      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteModalOpen}
         title="Delete Transaction"
@@ -346,6 +401,41 @@ export const Dashboard = () => {
         cancelText="Cancel"
         type="danger"
       />
+
+      {selectedPieSlice && (
+        <div className="pie-detail-modal-overlay" onClick={() => setSelectedPieSlice(null)}>
+          <div className="pie-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="pie-detail-close" 
+              onClick={() => setSelectedPieSlice(null)}
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+            <div className="pie-detail-content">
+              <div 
+                className="pie-detail-color" 
+                style={{ backgroundColor: selectedPieSlice.color }}
+              />
+              <h3 className="pie-detail-title">{selectedPieSlice.name}</h3>
+              <div className="pie-detail-amount">
+                {formatCurrency(selectedPieSlice.value, currency)}
+              </div>
+              <div className="pie-detail-percent">
+                {selectedPieSlice.percent.toFixed(1)}% of total spending
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button 
+        className="fab-add mobile-only"
+        onClick={() => setFormOpen(true)}
+        aria-label="Add transaction"
+      >
+        <TrendingUp size={24} />
+      </button>
     </div>
   );
 };

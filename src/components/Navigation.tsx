@@ -1,13 +1,24 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Wallet, Sun, Moon, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Calendar, Wallet, Sun, Moon, DollarSign, User, LogOut } from 'lucide-react';
 import { useTheme } from '@/context/useTheme';
 import { useCurrency } from '@/context/useCurrency';
+import { useAuth } from '@/context/AuthContext';
 import { CURRENCIES } from '@/types/currency';
 import './Navigation.css';
 
 export const Navigation = () => {
   const { theme, toggleTheme } = useTheme();
   const { currency, setCurrency } = useCurrency();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  // Don't show navigation on login page
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <nav className="navigation">
@@ -56,6 +67,27 @@ export const Navigation = () => {
         >
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
         </button>
+
+        {/* User Menu */}
+        <div className="user-menu">
+          <NavLink 
+            to="/settings" 
+            className={({ isActive }) => `nav-link user-link ${isActive ? 'active' : ''}`}
+          >
+            <div className="user-avatar">
+              <User size={18} />
+            </div>
+            <span className="user-name">{user?.name?.split(' ')[0]}</span>
+          </NavLink>
+          
+          <button 
+            onClick={handleLogout}
+            className="nav-link logout-btn"
+            aria-label="Log out"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </div>
     </nav>
   );
