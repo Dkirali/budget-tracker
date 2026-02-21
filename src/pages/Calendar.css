@@ -255,11 +255,14 @@
   border-top-left-radius: 1.25rem;
   border-top-right-radius: 1.25rem;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
-  max-height: 80vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   z-index: 100;
   animation: slideUp 0.3s ease-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
 }
 
 @keyframes slideUp {
@@ -411,10 +414,8 @@
 
 /* Detail Transactions */
 .detail-transactions {
-  overflow-y: auto;
   flex: 1;
   padding: 0.5rem 0;
-  max-height: 40vh;
 }
 
 .detail-item {
