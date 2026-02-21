@@ -264,7 +264,7 @@ export const Calendar = () => {
       <TransactionForm
         isOpen={formOpen}
         onClose={() => setFormOpen(false)}
-        onTransactionAdded={(transaction) => {
+        onSubmit={(transaction) => {
           // Optimistic update - sadece local state güncelle
           setTransactions(prev => [transaction, ...prev]);
           setFormOpen(false);

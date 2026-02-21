@@ -2,35 +2,15 @@
   "transactions": {
     "6655af51-057c-42bc-9b82-f11f300d8a07": [
       {
-        "id": "1771624897452-moggys9dt",
-        "type": "expense",
-        "category": "housing",
-        "amount": 46500,
-        "date": "2026-02-01",
-        "currency": "TRY",
-        "expenseType": "mandatory",
-        "isRecurring": true
-      },
-      {
         "id": "1771625077929-m72tby8x6",
         "type": "expense",
         "category": "business",
-        "amount": 8400,
-        "date": "2026-02-15",
+        "amount": 840000,
+        "date": "2026-02-18",
         "notes": "Eski Mali Musavir test",
         "currency": "TRY",
         "expenseType": "mandatory",
         "isRecurring": false
-      },
-      {
-        "id": "1771631829596-19q7wr7g1",
-        "type": "expense",
-        "category": "food",
-        "amount": 2000,
-        "date": "2026-02-20",
-        "currency": "EUR",
-        "expenseType": "leisure",
-        "isRecurring": true
       }
     ]
   }

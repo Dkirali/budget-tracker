@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -40,50 +40,70 @@ export const Dashboard = () => {
   const { rates } = useExchangeRates();
   const { getActiveCycle } = useSettings();
 
-  const loadTransactions = async () => {
-    const data = await storageService.getTransactions();
-    setTransactions(data);
-  };
-
-  const handleDeleteClick = (id: string) => {
-    setTransactionToDelete(id);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (transactionToDelete) {
-      // Optimistic delete - UI'dan hemen kaldır
-      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
-      setDeleteModalOpen(false);
-      setTransactionToDelete(null);
-      // Server'dan sil (background'da)
-      await storageService.deleteTransaction(transactionToDelete);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteModalOpen(false);
-    setTransactionToDelete(null);
-  };
-
-  const handleEditTransaction = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-  };
-
-  const handleCloseEditModal = () => {
-    setEditingTransaction(null);
-  };
-
+  // Initial load - sadece mount'ta çalışır
   useEffect(() => {
-    loadTransactions();
+    const loadInitialData = async () => {
+      const data = await storageService.getTransactions();
+      setTransactions(data);
+    };
+    loadInitialData();
   }, []);
 
-  // Get active budget cycle
+  const handleDeleteClick = useCallback((id: string) => {
+    setTransactionToDelete(id);
+    setDeleteModalOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (transactionToDelete) {
+      // 1. UI'dan hemen kaldır (optimistic delete)
+      setTransactions(prev => prev.filter(t => t.id !== transactionToDelete));
+      // 2. Modal'ı kapat
+      setDeleteModalOpen(false);
+      setTransactionToDelete(null);
+      // 3. Server'dan sil (background'da, async)
+      await storageService.deleteTransaction(transactionToDelete);
+    }
+  }, [transactionToDelete]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteModalOpen(false);
+    setTransactionToDelete(null);
+  }, []);
+
+  const handleEditTransaction = useCallback((transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setFormOpen(true);
+  }, []);
+
+  const handleCloseEditModal = useCallback(() => {
+    setEditingTransaction(null);
+    setFormOpen(false);
+  }, []);
+
+  const handleTransactionSubmit = useCallback((transaction: Transaction) => {
+    // Optimistic update: Direkt state'e ekle/güncelle, server cevabını bekleme
+    setTransactions(prev => {
+      const existingIndex = prev.findIndex(t => t.id === transaction.id);
+      if (existingIndex >= 0) {
+        // Edit: Mevcut transaction'ı güncelle
+        const updated = [...prev];
+        updated[existingIndex] = transaction;
+        return updated;
+      } else {
+        // Add: Yeni transaction'ı başa ekle
+        return [transaction, ...prev];
+      }
+    });
+    // Modal'ı kapat
+    setFormOpen(false);
+    setEditingTransaction(null);
+  }, []);
+
   const activeCycle = getActiveCycle();
 
-  // Calculate stats with currency conversion
+  // Stats hesaplamaları - transactions değiştiğinde otomatik güncellenir
   const stats = useMemo(() => {
-    // Convert all amounts to selected currency
     const convertedIncome = calculateTotalInCurrency(
       transactions.filter(t => t.type === 'income').map(t => ({ amount: t.amount, currency: (t.currency || 'USD') as CurrencyCode })),
       currency,
@@ -102,18 +122,15 @@ export const Dashboard = () => {
       rates
     );
 
-    // Calculate days in cycle
-    let daysInCycle = 30; // Default
+    let daysInCycle = 30;
     if (activeCycle) {
       if (activeCycle.startDay <= activeCycle.endDay) {
         daysInCycle = activeCycle.endDay - activeCycle.startDay + 1;
       } else {
-        // Cycle spans month boundary (e.g., 24th to 23rd)
         daysInCycle = (31 - activeCycle.startDay + 1) + activeCycle.endDay;
       }
     }
 
-    // Use cycle budget if available, otherwise calculate from income
     const monthlyBudget = activeCycle?.monthlyBudget || Math.max(0, convertedIncome - convertedMandatory);
     
     return {
@@ -127,7 +144,6 @@ export const Dashboard = () => {
     };
   }, [transactions, currency, rates, activeCycle]);
 
-  // Calculate spending breakdown by category for pie chart
   const spendingByCategory = useMemo(() => {
     const expenses = transactions.filter(t => t.type === 'expense');
     const categoryTotals: Record<string, number> = {};
@@ -368,33 +384,13 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Add Transaction Modal */}
       <TransactionForm
-        isOpen={formOpen && !editingTransaction}
-        onClose={() => setFormOpen(false)}
-        onTransactionAdded={(transaction: Transaction) => {
-          // Optimistic update - sadece local state güncelle, server'a güven
-          setTransactions(prev => [transaction, ...prev]);
-          setFormOpen(false);
-          // NOT: loadTransactions() çağırmıyoruz - bu flicker'a sebep oluyordu
-        }}
-      />
-
-      {/* Edit Transaction Modal */}
-      <TransactionForm
-        isOpen={!!editingTransaction}
+        isOpen={formOpen}
         onClose={handleCloseEditModal}
-        onTransactionAdded={(transaction: Transaction) => {
-          // Optimistic update - sadece local state güncelle
-          setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
-          handleCloseEditModal();
-          // NOT: loadTransactions() çağırmıyoruz
-        }}
+        onSubmit={handleTransactionSubmit}
         editingTransaction={editingTransaction}
-        onCancelEdit={handleCloseEditModal}
       />
 
-      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteModalOpen}
         title="Delete Transaction"
@@ -406,7 +402,6 @@ export const Dashboard = () => {
         type="danger"
       />
 
-      {/* Pie Slice Detail Modal */}
       {selectedPieSlice && (
         <div className="pie-detail-modal-overlay" onClick={() => setSelectedPieSlice(null)}>
           <div className="pie-detail-modal" onClick={(e) => e.stopPropagation()}>
@@ -434,7 +429,6 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* Mobile FAB */}
       <button 
         className="fab-add mobile-only"
         onClick={() => setFormOpen(true)}

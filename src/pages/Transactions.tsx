@@ -225,7 +225,7 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onTransactionAdded={(transaction) => {
+        onSubmit={(transaction) => {
           // Optimistic update - sadece local state güncelle
           setTransactions(prev => [transaction, ...prev]);
           setShowAddModal(false);
@@ -237,7 +237,7 @@ export const Transactions = () => {
       <TransactionForm
         isOpen={!!editingTransaction}
         onClose={handleCloseEditModal}
-        onTransactionAdded={(transaction) => {
+        onSubmit={(transaction) => {
           // Optimistic update - sadece local state güncelle
           setTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
           handleCloseEditModal();
